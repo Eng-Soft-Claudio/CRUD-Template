@@ -1,0 +1,2472 @@
+################################################################################
+#                                                                              #
+#                         ____        _   _                                      #
+#                        |  _ \ _   _| |_| |__   ___  _ __                       #
+#                        | |_| | | | | __| '_ \ / _ \| '_ \                      #
+#                        |  __/| |_| | |_| | | | (_) | | | |                     #
+#                        |_|    \__, |\__|_| |_|\___/|_| |_|                     #
+#                               |___/                                            #
+#                                                                              #
+#                                                                              #
+################################################################################
+
+================================================================================
+CÓDIGO-FONTE DO PROJETO
+================================================================================
+
+SUMÁRIO
+--------------------------------------------------------------------------------
+Capítulo 1: Dockerfile
+Capítulo 2: alembic/env.py
+Capítulo 3: alembic/versions/595de6c503ca_create_user_table.py
+Capítulo 4: app/api/deps.py
+Capítulo 5: app/api/v1/endpoints/auth.py
+Capítulo 6: app/core/config.py
+Capítulo 7: app/core/security.py
+Capítulo 8: app/crud/__init__.py
+Capítulo 9: app/crud/user.py
+Capítulo 10: app/db/base_class.py
+Capítulo 11: app/db/models/__init__.py
+Capítulo 12: app/db/models/user.py
+Capítulo 13: app/db/session.py
+Capítulo 14: app/main.py
+Capítulo 15: app/schemas/__init__.py
+Capítulo 16: app/schemas/token.py
+Capítulo 17: app/schemas/user.py
+Capítulo 18: docker-compose.yml
+Capítulo 19: tests/api/v1/test_auth_endpoints.py
+Capítulo 20: tests/conftest.py
+Capítulo 21: tests/core/test_security.py
+Capítulo 22: tests/crud/test_user_crud.py
+Capítulo 23: tests/schemas/test_token_schema.py
+
+
+================================================================================
+Capítulo 1: Dockerfile
+================================================================================
+
+# Dockerfile
+
+# Imagem base Python
+FROM python:3.12-slim AS builder
+
+# Definir variáveis de ambiente
+ENV PYTHONDONTWRITEBYTECODE=1
+ENV PYTHONUNBUFFERED=1
+
+# Diretório de trabalho dentro do container
+WORKDIR /usr/src/app
+
+# Copiar o arquivo de dependências
+COPY requirements.txt .
+
+# Instalar as dependências
+RUN pip install --no-cache-dir --upgrade pip
+RUN pip install --no-cache-dir -r requirements.txt
+
+# Copiar o restante do código da aplicação para o diretório de trabalho
+COPY ./app ./app
+
+# Expor a porta que a aplicação vai rodar dentro do container
+EXPOSE 8000
+
+# Comando para executar a aplicação quando o container iniciar
+CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000"]
+
+================================================================================
+Capítulo 2: alembic/env.py
+================================================================================
+
+# /alembic/env.py
+
+# =======================================================================================================
+# --- Importações ---                                                                               #####
+# =======================================================================================================
+
+from logging.config import fileConfig
+
+from sqlalchemy import create_engine 
+from sqlalchemy import pool
+
+from alembic import context
+
+import os
+import sys
+
+sys.path.append(os.path.join(os.path.dirname(__file__), '..'))
+
+from app.core.config import settings
+from app.db.base_class import Base
+
+from app.db.models import User 
+
+
+# =======================================================================================================
+# --- Configurações ---                                                                             #####
+# =======================================================================================================
+
+_ = User 
+
+config = context.config
+
+if config.config_file_name is not None:
+    fileConfig(config.config_file_name)
+
+config.set_main_option('sqlalchemy.url', settings.DATABASE_URL)
+
+target_metadata = Base.metadata
+
+# =======================================================================================================
+# --- Funções de Migração ---                                                                       #####
+# =======================================================================================================
+
+def run_migrations_offline() -> None:
+    """Run migrations in 'offline' mode.
+
+    This configures the context with just a URL
+    and not an Engine, though an Engine is acceptable
+    here as well.  By skipping the Engine creation
+    we don't even need a DBAPI to be available.
+
+    Calls to context.execute() here emit the given string to the
+    script output.
+
+    """
+    url = settings.DATABASE_URL
+    context.configure(
+        url=url,
+        target_metadata=target_metadata,
+        literal_binds=True,
+        dialect_opts={"paramstyle": "named"},
+    )
+
+    with context.begin_transaction():
+        context.run_migrations()
+
+
+def run_migrations_online() -> None:
+    """Run migrations in 'online' mode.
+
+    In this scenario we need to create an Engine
+    and associate a connection with the context.
+
+    """
+    connectable = create_engine(settings.DATABASE_URL, poolclass=pool.NullPool)
+
+    with connectable.connect() as connection:
+        context.configure(
+            connection=connection, target_metadata=target_metadata
+        )
+
+        with context.begin_transaction():
+            context.run_migrations()
+
+# =======================================================================================================
+# --- Condição de Migração ---                                                                      #####
+# =======================================================================================================
+
+if context.is_offline_mode():
+    run_migrations_offline()
+else:
+    run_migrations_online()
+
+
+================================================================================
+Capítulo 3: alembic/versions/595de6c503ca_create_user_table.py
+================================================================================
+
+"""create_user_table
+
+Revision ID: 595de6c503ca
+Revises: 
+Create Date: 2025-05-20 13:58:34.664170
+
+"""
+
+# =======================================================================================================
+# --- Importações ---                                                                               #####
+# =======================================================================================================
+
+from typing import Sequence, Union
+
+from alembic import op
+import sqlalchemy as sa
+
+
+# =======================================================================================================
+# --- Revisão e Identificadores ---                                                                 #####
+# =======================================================================================================
+
+revision: str = '595de6c503ca'
+down_revision: Union[str, None] = None
+branch_labels: Union[str, Sequence[str], None] = None
+depends_on: Union[str, Sequence[str], None] = None
+
+# =======================================================================================================
+# --- Upgrade e Downgrade do Alembic ---                                                            #####
+# =======================================================================================================
+
+def upgrade() -> None:
+    """Upgrade schema."""
+    op.create_table('user',
+    sa.Column('id', sa.Integer(), nullable=False),
+    sa.Column('email', sa.String(length=255), nullable=False),
+    sa.Column('hashed_password', sa.String(length=255), nullable=False),
+    sa.Column('full_name', sa.String(length=255), nullable=True),
+    sa.Column('is_active', sa.Boolean(), nullable=False),
+    sa.Column('is_superuser', sa.Boolean(), nullable=False),
+    sa.PrimaryKeyConstraint('id')
+    )
+    op.create_index(op.f('ix_user_email'), 'user', ['email'], unique=True)
+    op.create_index(op.f('ix_user_full_name'), 'user', ['full_name'], unique=False)
+    op.create_index(op.f('ix_user_id'), 'user', ['id'], unique=False)
+
+
+def downgrade() -> None:
+    """Downgrade schema."""
+    op.drop_index(op.f('ix_user_id'), table_name='user')
+    op.drop_index(op.f('ix_user_full_name'), table_name='user')
+    op.drop_index(op.f('ix_user_email'), table_name='user')
+    op.drop_table('user')
+
+
+================================================================================
+Capítulo 4: app/api/deps.py
+================================================================================
+
+# app/api/deps.py
+
+# ====================================================================================
+# --- Importações ---                                                            =====
+# ====================================================================================
+
+from typing import Generator
+
+from fastapi import Depends, HTTPException, status
+from fastapi.security import OAuth2PasswordBearer
+from jose import JWTError
+from pydantic import ValidationError
+from sqlalchemy.orm import Session
+
+from app.db.session import SessionLocal
+from app.core import security
+from app.core.config import settings
+from app.db.models.user import User as UserModel 
+from app.schemas.token import TokenData
+from app.crud import user as crud_user 
+
+# ====================================================================================
+# --- Autenticação ---                                                           =====
+# ====================================================================================
+
+reusable_oauth2 = OAuth2PasswordBearer(
+    tokenUrl=f"{settings.API_V1_STR}/auth/login" #
+)
+
+# ====================================================================================
+# --- Funções ---                                                                =====
+# ====================================================================================
+
+def get_db() -> Generator[Session, None, None]: # pragma: no cover
+    """
+    Dependência para obter uma sessão do banco de dados por request.
+    """
+    db = SessionLocal()
+    try:
+        yield db
+    finally:
+        db.close()
+
+
+async def get_current_user(
+    db: Session = Depends(get_db), token: str = Depends(reusable_oauth2)
+) -> UserModel:
+    credentials_exception = HTTPException(
+        status_code=status.HTTP_401_UNAUTHORIZED,
+        detail="Could not validate credentials",
+        headers={"WWW-Authenticate": "Bearer"},
+    )
+    try:
+        payload = security.decode_token(token)
+        if payload is None:
+            raise credentials_exception
+        
+        token_email_from_payload = payload.get("sub")
+        if token_email_from_payload is None:
+            raise credentials_exception
+        
+        token_data = TokenData(email=token_email_from_payload)
+
+    except (JWTError, ValidationError):
+        raise credentials_exception
+
+    if token_data.email is None: 
+        raise credentials_exception # pragma: no cover
+
+    user = crud_user.get_user_by_email(db, email=token_data.email)
+    
+    if user is None:
+        raise credentials_exception
+    return user
+
+
+async def get_current_active_user(
+    current_user: UserModel = Depends(get_current_user),
+) -> UserModel:
+    """
+    Dependência para obter o usuário atual que também está ativo.
+    """
+    if not current_user.is_active:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Inactive user")
+    return current_user
+
+
+async def get_current_active_superuser(
+    current_user: UserModel = Depends(get_current_active_user),
+) -> UserModel:
+    """
+    Dependência para obter o usuário atual que é ativo e superusuário.
+    """
+    if not current_user.is_superuser:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="The user doesn't have enough privileges",
+        )
+    return current_user
+
+================================================================================
+Capítulo 5: app/api/v1/endpoints/auth.py
+================================================================================
+
+# app/api/v1/endpoints/auth.py
+
+# =======================================================================================================
+# --- Importações ---                                                                               #####
+# =======================================================================================================
+
+from typing import Any, Dict
+
+from fastapi import APIRouter, Body, Depends, HTTPException, status
+from fastapi.security import OAuth2PasswordRequestForm 
+from sqlalchemy.orm import Session
+
+from app.schemas.user import ( 
+    UserCreate,
+    UserRead,
+    UserUpdate,
+    UserPasswordChange,
+    PasswordRecoveryRequest, 
+    PasswordResetForm        
+)
+from app.schemas.token import Token
+from app.crud.user import ( 
+    get_user_by_email,
+    create_user,
+    update_user,
+    delete_user 
+)
+from app.api import deps
+from app.core import security
+from app.core.config import settings
+from app.db.models.user import User as UserModel 
+
+# =======================================================================================================
+# --- Rotas ---                                                                                     #####
+# =======================================================================================================
+
+router = APIRouter()
+
+# =======================================================================================================
+# --- Endpoints ---                                                                                 #####
+# =======================================================================================================
+
+@router.post("/register", response_model=UserRead, status_code=status.HTTP_201_CREATED)
+def register_new_user(
+    *,
+    db: Session = Depends(deps.get_db),
+    user_in: UserCreate,
+) -> Any:
+    """
+    Cria um novo usuário.
+    """
+    user = get_user_by_email(db, email=user_in.email)
+    if user:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="The user with this email already exists in the system.",
+        )
+    new_user = create_user(db=db, user=user_in)
+    return new_user
+
+
+@router.post("/login", response_model=Token)
+def login_for_access_token(
+    db: Session = Depends(deps.get_db),
+    form_data: OAuth2PasswordRequestForm = Depends() 
+) -> Any:
+    """
+    OAuth2 compatível com endpoint de token, login com email e senha.
+    Retorna um access_token e um refresh_token (opcional).
+    """
+    user = get_user_by_email(db, email=form_data.username)
+    if not user or not security.verify_password(form_data.password, user.hashed_password):
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Incorrect email or password",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
+    if not user.is_active:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Inactive user")
+    
+    access_token = security.create_access_token(
+        data={"sub": user.email} 
+    )
+    
+    return {
+        "access_token": access_token,
+        "token_type": "bearer",
+    }
+
+
+@router.get("/me", response_model=UserRead)
+def read_users_me(
+    current_user: UserModel = Depends(deps.get_current_active_user),
+) -> Any:
+    """
+    Obtém o usuário atual.
+    """
+    return current_user
+
+
+@router.get("/me/superuser", response_model=UserRead)
+def read_current_superuser(
+    current_user: UserModel = Depends(deps.get_current_active_superuser),
+) -> Any:
+    """
+    Obtém o usuário atual, requerendo que seja um superusuário ativo.
+    Endpoint de teste para a dependência get_current_active_superuser.
+    """
+    return current_user
+
+
+@router.patch("/me", response_model=UserRead)
+def update_user_me(
+    *,
+    db: Session = Depends(deps.get_db),
+    user_update_data: UserUpdate, 
+    current_user: UserModel = Depends(deps.get_current_active_user) 
+) -> Any:
+    """
+    Atualiza os dados do usuário autenticado.
+    Permite atualizar email, full_name, password (se enviado).
+    Campos como is_active e is_superuser não devem ser atualizáveis pelo próprio usuário aqui.
+    """
+    if user_update_data.email and user_update_data.email != current_user.email:
+        existing_user = get_user_by_email(db, email=user_update_data.email)
+        if existing_user and existing_user.id != current_user.id:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Email already registered by another user.",
+            )
+
+    update_data_for_crud = user_update_data.model_dump(exclude_unset=True)
+    if "is_active" in update_data_for_crud:
+        del update_data_for_crud["is_active"] 
+    if "is_superuser" in update_data_for_crud:
+        del update_data_for_crud["is_superuser"] 
+
+    updated_user = update_user(db=db, db_user=current_user, user_in=update_data_for_crud)
+    return updated_user
+
+
+@router.put("/me/password", status_code=status.HTTP_204_NO_CONTENT)
+def update_current_user_password(
+    *,
+    db: Session = Depends(deps.get_db),
+    password_data: UserPasswordChange, 
+    current_user: UserModel = Depends(deps.get_current_active_user)
+) -> None: 
+    """
+    Atualiza a senha do usuário autenticado.
+    Requer a senha atual e a nova senha (com confirmação).
+    """
+    # 1. Verificar se a senha atual fornecida está correta
+    if not security.verify_password(password_data.current_password, current_user.hashed_password):
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Incorrect current password",
+        )
+    
+    # 2. Verificar se a nova senha é diferente da antiga 
+    if security.verify_password(password_data.new_password, current_user.hashed_password):
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="New password cannot be the same as the current password.",
+        )
+
+    # 3. Gerar o hash da nova senha
+    hashed_password = security.get_password_hash(password_data.new_password)
+    current_user.hashed_password = hashed_password 
+    
+    db.add(current_user)
+    db.commit()
+
+
+@router.delete("/me", status_code=status.HTTP_204_NO_CONTENT)
+def delete_user_me(
+    *,
+    db: Session = Depends(deps.get_db),
+    current_user: UserModel = Depends(deps.get_current_active_user)
+) -> None: 
+    """
+    Deleta a conta do usuário autenticado.
+    """
+    delete_user(db=db, db_user=current_user)
+    return None
+
+
+@router.post("/password-recovery", response_model=Dict[str, str])
+async def request_password_recovery(
+    recovery_data: PasswordRecoveryRequest,
+    db: Session = Depends(deps.get_db)
+) -> Any:
+    """
+    Inicia o processo de recuperação de senha.
+    Gera um token de recuperação se o usuário existir.
+    (Simula o envio de e-mail printando o token e um link de exemplo).
+    """
+    user = get_user_by_email(db, email=recovery_data.email)
+    if not user:
+        return {"message": "Se um usuário com este email existir, um link de recuperação foi enviado."}
+
+    password_reset_token = security.create_password_reset_token(email=user.email)
+    
+    reset_link = f"{settings.SERVER_HOST}{settings.API_V1_STR}/auth/reset-password-form?token={password_reset_token}" 
+    
+    print("---- SIMULAÇÃO DE ENVIO DE E-MAIL ----")
+    print(f"Para: {user.email}")
+    print(f"Assunto: Recuperação de Senha - {settings.PROJECT_NAME}")
+    print(f"Use o seguinte token para resetar sua senha (ou clique no link): {password_reset_token}")
+    print(f"Ou acesse o link: {reset_link}")
+    print("--------------------------------------")
+    
+    return {"message": "Se um usuário com este email existir, um link de recuperação foi enviado."}
+
+
+@router.post("/reset-password", status_code=status.HTTP_204_NO_CONTENT)
+async def reset_user_password(
+    reset_form_data: PasswordResetForm = Body(...),
+    db: Session = Depends(deps.get_db)
+) -> None:
+    """
+    Reseta a senha do usuário usando um token de recuperação válido.
+    """
+    email_from_token = security.verify_password_reset_token(reset_form_data.token)
+    if not email_from_token:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Token de recuperação de senha inválido ou expirado.",
+        )
+    
+    user = get_user_by_email(db, email=email_from_token)
+    if not user:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Usuário não encontrado. Token pode ser inválido.",
+        )
+    
+    if not user.is_active:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Usuário inativo.")
+    
+    hashed_password = security.get_password_hash(reset_form_data.new_password)
+    user.hashed_password = hashed_password
+    db.add(user)
+    db.commit()
+
+    # Simulação de envio de e-mail de confirmação:
+    print(f"---- SIMULAÇÃO DE ENVIO DE E-MAIL ----")         
+    print(f"Para: {user.email}")                            
+    print(f"Assunto: Sua senha foi alterada - {settings.PROJECT_NAME}")
+    print(f"Sua senha foi alterada com sucesso.")              
+    print("--------------------------------------") 
+
+    return None
+
+================================================================================
+Capítulo 6: app/core/config.py
+================================================================================
+
+# app/core/config.py
+
+# =======================================================================================================
+# --- Importações ---                                                                               #####
+# =======================================================================================================
+
+from typing import Optional
+from pydantic import EmailStr
+from pydantic_settings import BaseSettings, SettingsConfigDict 
+from dotenv import load_dotenv
+
+
+# =======================================================================================================
+# --- Carrega Variáveis de Ambiente ---                                                             #####
+# =======================================================================================================
+
+load_dotenv()
+
+# =======================================================================================================
+# --- Configurações ---                                                                             #####
+# =======================================================================================================
+
+class Settings(BaseSettings):
+    PROJECT_NAME: str = "CRUD-Template"
+    API_V1_STR: str = "/api/v1"
+
+    # Configurações do Banco de Dados
+    DATABASE_URL: str = "postgresql://default_user:default_password@localhost:5432/default_db"
+    DATABASE_URL_TEST: Optional[str] = None
+
+    # Configurações para JWT 
+    SECRET_KEY: str = "a_very_secret_key_that_should_be_long_and_random_and_changed"
+    RECOVERY_TOKEN_SECRET_KEY: str = "a_very_secret_key_that_should_be_long_and_random_and_changed"
+    ALGORITHM: str = "HS256"
+    ACCESS_TOKEN_EXPIRE_MINUTES: int = 30
+    REFRESH_TOKEN_EXPIRE_DAYS: int = 7  
+
+    # Configurações para Token de Recuperação de Senha
+    PASSWORD_RESET_TOKEN_EXPIRE_HOURS: int = 1
+    SERVER_HOST: str = "http://localhost:8000"
+
+    # Configurações para Email
+    SMTP_TLS: bool = True
+    SMTP_PORT: Optional[int] = None
+    SMTP_HOST: Optional[str] = None
+    SMTP_USER: Optional[str] = None
+    SMTP_PASSWORD: Optional[str] = None
+    EMAILS_FROM_EMAIL: Optional[EmailStr] = None
+    EMAILS_FROM_NAME: Optional[str] = None
+
+    # Configurações de Ambiente
+    model_config = SettingsConfigDict(
+        env_file=".env",        
+        env_file_encoding='utf-8',
+        case_sensitive=True,
+        extra='ignore'          
+    )
+
+settings = Settings()
+
+================================================================================
+Capítulo 7: app/core/security.py
+================================================================================
+
+# app/core/security.py
+
+
+# =======================================================================================================
+# --- Importações ---                                                                               #####
+# =======================================================================================================
+
+from datetime import datetime, timedelta, timezone
+from typing import Optional, Any, Dict
+
+from jose import JWTError, jwt
+from passlib.context import CryptContext
+
+from app.core.config import settings
+
+
+# =======================================================================================================
+# --- Configuração do Passlib para hashing de senhas ---                                            #####
+# =======================================================================================================
+
+pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
+
+ALGORITHM = settings.ALGORITHM
+SECRET_KEY = settings.SECRET_KEY
+ACCESS_TOKEN_EXPIRE_MINUTES = settings.ACCESS_TOKEN_EXPIRE_MINUTES
+REFRESH_TOKEN_EXPIRE_DAYS = settings.REFRESH_TOKEN_EXPIRE_DAYS
+PASSWORD_RESET_TOKEN_EXPIRE_HOURS = settings.PASSWORD_RESET_TOKEN_EXPIRE_HOURS
+
+# =======================================================================================================
+# --- Funções ---                                                                                   #####
+# =======================================================================================================
+
+def verify_password(plain_password: str, hashed_password: str) -> bool:
+    """Verifica se a senha plana corresponde à senha com hash."""
+    return pwd_context.verify(plain_password, hashed_password)
+
+def get_password_hash(password: str) -> str:
+    """Gera o hash de uma senha."""
+    return pwd_context.hash(password)
+
+def create_access_token(data: Dict[str, Any], expires_delta: Optional[timedelta] = None) -> str:
+    to_encode = data.copy()
+    if expires_delta:
+        expire = datetime.now(timezone.utc) + expires_delta
+    else:
+        expire = datetime.now(timezone.utc) + timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
+    to_encode.update({"exp": expire})
+    encoded_jwt = jwt.encode(to_encode, SECRET_KEY, algorithm=ALGORITHM)
+    return encoded_jwt
+
+def create_refresh_token(data: Dict[str, Any], expires_delta: Optional[timedelta] = None) -> str:
+    """Cria um novo refresh token JWT."""
+    to_encode = data.copy()
+    if expires_delta:
+        expire = datetime.now(timezone.utc) + expires_delta
+    else:
+        expire = datetime.now(timezone.utc) + timedelta(days=REFRESH_TOKEN_EXPIRE_DAYS)
+    to_encode.update({"exp": expire})
+    encoded_jwt = jwt.encode(to_encode, SECRET_KEY, algorithm=ALGORITHM)
+    return encoded_jwt
+
+def create_password_reset_token(email: str) -> str:
+    """
+    Gera um token JWT específico para recuperação de senha.
+    O 'sub' do token será o email. Adiciona 'type' claim.
+    """
+    expire = datetime.now(timezone.utc) + timedelta(hours=PASSWORD_RESET_TOKEN_EXPIRE_HOURS)
+    to_encode: Dict[str, Any] = {
+        "exp": expire,
+        "sub": email,
+        "type": "password_reset" 
+    }
+    encoded_jwt = jwt.encode(to_encode, settings.SECRET_KEY, algorithm=ALGORITHM)
+    return encoded_jwt
+
+def verify_password_reset_token(token: str) -> Optional[str]:
+    """
+    Verifica um token de recuperação de senha.
+    Retorna o email (subject) se o token for válido e do tipo 'password_reset',
+    caso contrário, retorna None.
+    """
+    try:
+        payload = jwt.decode(token, settings.SECRET_KEY, algorithms=[ALGORITHM])
+        if payload.get("type") == "password_reset":
+            email_sub = payload.get("sub")
+            if isinstance(email_sub, str): 
+                 return email_sub
+        return None # pragma: no cover
+    except JWTError: 
+        return None
+
+def decode_token(token: str) -> Optional[dict[str, Any]]:
+    """Decodifica um token JWT e retorna o payload se válido, None caso contrário."""
+    try:
+        payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
+        return payload
+    except JWTError:
+        return None
+
+def get_subject_from_token(token: str) -> Optional[str]:
+    """
+    Decodifica um token JWT e extrai o 'sub' (subject, e.g., email ou user_id) do payload.
+    Retorna o subject se o token for válido e o subject estiver presente, caso contrário None.
+    """
+    payload = decode_token(token)
+    if payload:
+        return payload.get("sub")
+    return None
+
+================================================================================
+Capítulo 8: app/crud/__init__.py
+================================================================================
+
+# app/crud/__init__.py
+from .user import get_user, get_user_by_email, create_user, update_user, delete_user
+
+__all__ = [
+    "get_user",
+    "get_user_by_email",
+    "create_user",
+    "update_user", 
+    "delete_user",
+]
+
+================================================================================
+Capítulo 9: app/crud/user.py
+================================================================================
+
+# app/crud/user.py
+
+# =======================================================================================================
+# --- Importações ---                                                                               #####
+# =======================================================================================================
+
+from typing import Any, Dict, Optional, Union
+from sqlalchemy.orm import Session
+
+from app.db.models.user import User as UserModel
+from app.schemas.user import UserCreate, UserUpdate
+from app.core.security import get_password_hash
+
+# =======================================================================================================
+# --- CRUD ---                                                                                      #####
+# =======================================================================================================
+
+def get_user_by_email(db: Session, email: str) -> Optional[UserModel]: 
+    """
+    Busca um usuário pelo seu endereço de e-mail.
+    """
+    return db.query(UserModel).filter(UserModel.email == email).first()
+
+def get_user(db: Session, user_id: int) -> Optional[UserModel]: 
+    """
+    Busca um usuário pelo seu ID.
+    """
+    return db.query(UserModel).filter(UserModel.id == user_id).first()
+
+def create_user(db: Session, user: UserCreate) -> UserModel:
+    """
+    Cria um novo usuário no banco de dados.
+    """
+    hashed_password = get_password_hash(user.password)
+    db_user = UserModel(
+        email=user.email,
+        hashed_password=hashed_password,
+        full_name=user.full_name,
+        is_active=user.is_active if user.is_active is not None else True,
+        is_superuser=user.is_superuser if user.is_superuser is not None else False
+    )
+    db.add(db_user)
+    db.commit()
+    db.refresh(db_user)
+    return db_user
+
+def update_user(
+    db: Session,
+    db_user: UserModel, 
+    user_in: Union[UserUpdate, Dict[str, Any]]
+) -> UserModel:
+    """
+    Atualiza um usuário no banco de dados.
+    """
+    if isinstance(user_in, dict):
+        update_data = user_in
+    else:
+        update_data = user_in.model_dump(exclude_unset=True)
+
+    if update_data.get("password"):
+        hashed_password = get_password_hash(update_data["password"])
+        del update_data["password"]
+        db_user.hashed_password = hashed_password 
+
+    for field, value in update_data.items():
+        if hasattr(db_user, field) and value is not None:
+            setattr(db_user, field, value)
+
+    db.add(db_user)
+    db.commit()
+    db.refresh(db_user)
+    return db_user
+
+def delete_user(db: Session, db_user: UserModel) -> UserModel:
+    """
+    Deleta um usuário do banco de dados.
+    """
+    db.delete(db_user)
+    db.commit()
+    return db_user 
+
+================================================================================
+Capítulo 10: app/db/base_class.py
+================================================================================
+
+# app/db/base_class.py
+
+# =======================================================================================================
+# --- Importações ---                                                                               #####
+# =======================================================================================================
+
+from sqlalchemy.orm import DeclarativeBase, declared_attr
+from typing import Any
+
+# =======================================================================================================
+# --- Instância ---                                                                                 #####
+# =======================================================================================================
+class Base(DeclarativeBase):
+    """
+    Classe base para os modelos SQLAlchemy.
+    Automaticamente define o nome da tabela como o nome da classe em minúsculas.
+    """
+    id: Any
+    __name__: str
+
+    @declared_attr.directive
+    def __tablename__(cls) -> str:
+        return cls.__name__.lower()
+
+================================================================================
+Capítulo 11: app/db/models/__init__.py
+================================================================================
+
+# app/db/models/__init__.py
+
+from .user import User
+
+__all__ = ["User"]
+_ = User
+
+
+================================================================================
+Capítulo 12: app/db/models/user.py
+================================================================================
+
+# app/db/models/user.py
+
+# =======================================================================================================
+# --- Importações ---                                                                               #####
+# =======================================================================================================
+from sqlalchemy import Integer, String, Boolean
+from sqlalchemy.orm import Mapped, mapped_column 
+
+from app.db.base_class import Base 
+
+# =======================================================================================================
+# --- Classe Base de Usuário ---                                                                    #####
+# =======================================================================================================
+class User(Base):
+    """
+    Modelo de tabela para os usuários.
+    """
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, index=True)
+    email: Mapped[str] = mapped_column(String(255), unique=True, index=True, nullable=False)
+    hashed_password: Mapped[str] = mapped_column(String(255), nullable=False)
+    full_name: Mapped[str | None] = mapped_column(String(255), index=True, nullable=True) 
+    is_active: Mapped[bool] = mapped_column(Boolean, default=True)
+    is_superuser: Mapped[bool] = mapped_column(Boolean, default=False)
+
+
+================================================================================
+Capítulo 13: app/db/session.py
+================================================================================
+
+# app/db/session.py
+
+# =======================================================================================================
+# --- Importações ---                                                                               #####
+# =======================================================================================================
+
+from sqlalchemy import create_engine
+from sqlalchemy.orm import sessionmaker, Session
+from typing import Generator
+
+from app.core.config import settings
+
+
+# =======================================================================================================
+# --- Motor e Seção local ---                                                                       #####
+# =======================================================================================================
+
+engine = create_engine(settings.DATABASE_URL, pool_pre_ping=True)
+
+SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
+
+# =======================================================================================================
+# --- Dependência ---                                                                               #####
+# =======================================================================================================
+
+def get_db() -> Generator[Session, None, None]: # pragma: no cover
+    """
+    Função de dependência para obter uma sessão do banco de dados por request.
+    Garante que a sessão seja fechada após o request, mesmo em caso de erro.
+    """
+    db = SessionLocal()
+    try:
+        yield db
+    finally:
+        db.close()
+
+================================================================================
+Capítulo 14: app/main.py
+================================================================================
+
+# app/main.py
+
+# =======================================================================================================
+# --- Importações ---                                                                               #####
+# =======================================================================================================
+
+from fastapi import FastAPI
+from typing import Dict
+
+from app.core.config import settings
+from app.api.v1.endpoints import auth as auth_router 
+
+
+# =======================================================================================================
+# --- Instância ---                                                                                 #####
+# =======================================================================================================
+
+app = FastAPI(
+    title=settings.PROJECT_NAME,
+    version="0.1.0",
+    description="FastAPI Template para CRUD",
+    openapi_url=f"{settings.API_V1_STR}/openapi.json"
+)
+
+# =======================================================================================================
+# --- Rotas ---                                                                                     #####
+# =======================================================================================================
+
+app.include_router(auth_router.router, prefix=settings.API_V1_STR + "/auth", tags=["Authentication & Users"])
+
+# =======================================================================================================
+# --- Endpoints ---                                                                                 #####
+# =======================================================================================================
+
+@app.get("/", tags=["Root"])
+async def read_root() -> Dict[str, str]:
+    """
+    Endpoint raiz da aplicação.
+    Retorna uma mensagem de boas-vindas.
+    """
+    return {"message": f"Bem-vindo à API: {settings.PROJECT_NAME}!"}
+
+@app.get("/health", tags=["Health Check"])
+async def health_check() -> Dict[str, str]:
+    """
+    Endpoint de verificação de saúde.
+    Útil para K8s, Docker Swarm, etc.
+    """
+    return {"status": "ok"}
+
+
+================================================================================
+Capítulo 15: app/schemas/__init__.py
+================================================================================
+
+# app/schemas/__init__.py
+
+from .user import (
+    UserBase,
+    UserCreate,
+    UserUpdate,
+    UserRead,
+    UserInDB,
+    UserPasswordChange,
+    PasswordRecoveryRequest,
+    PasswordResetForm,
+)
+from .token import Token, TokenData
+
+__all__ = [
+    "UserBase",
+    "UserCreate",
+    "UserUpdate",
+    "UserRead",
+    "UserInDB",
+    "UserPasswordChange",
+    "PasswordRecoveryRequest",
+    "PasswordResetForm",
+    "Token",
+    "TokenData",
+]
+
+================================================================================
+Capítulo 16: app/schemas/token.py
+================================================================================
+
+# app/schemas/token.py
+
+# =======================================================================================================
+# --- Importações ---                                                                               #####
+# =======================================================================================================
+
+from typing import Optional
+from pydantic import BaseModel, EmailStr
+
+# =======================================================================================================
+# --- Token Base e Data ---                                                                         #####
+# =======================================================================================================
+
+class Token(BaseModel):
+    access_token: str
+    token_type: str
+    refresh_token: Optional[str] = None
+
+class TokenData(BaseModel):
+    email: Optional[EmailStr] = None
+
+
+================================================================================
+Capítulo 17: app/schemas/user.py
+================================================================================
+
+# app/schemas/user.py
+
+# =======================================================================================================
+# --- Importações ---                                                                               #####
+# =======================================================================================================
+
+from pydantic import BaseModel, ConfigDict, EmailStr, Field, field_validator, ValidationInfo
+from typing import Optional
+
+# =======================================================================================================
+# --- Schemas de Usuário ---                                                                        #####
+# =======================================================================================================
+
+class UserBase(BaseModel):
+    full_name: Optional[str] = None
+    is_active: Optional[bool] = Field(default=True)
+    is_superuser: Optional[bool] = Field(default=False)
+
+class UserCreate(BaseModel): 
+    """Schema para criar um novo usuário."""
+    email: EmailStr 
+    password: str   
+    full_name: Optional[str] = None
+    is_active: Optional[bool] = Field(default=True) 
+    is_superuser: Optional[bool] = Field(default=False)
+
+class UserUpdate(UserBase):
+    """Schema para atualizar um usuário. Todos os campos são opcionais."""
+    email: Optional[EmailStr] = None
+    password: Optional[str] = None 
+
+class UserRead(BaseModel):
+    """Schema para dados de usuário retornados pela API."""
+    id: int
+    email: EmailStr
+    full_name: Optional[str] = None
+    is_active: bool
+    is_superuser: bool
+    model_config = ConfigDict(from_attributes=True)
+
+class UserInDB(UserRead):
+    hashed_password: str
+
+class UserPasswordChange(BaseModel):
+    """Schema para mudança de senha do usuário."""
+    current_password: str
+    new_password: str
+    new_password_confirm: str
+
+    @field_validator('new_password_confirm')
+    @classmethod
+    def passwords_match(cls, v: str, info: ValidationInfo) -> str:
+        """Verifica se a nova senha e a confirmação correspondem."""
+        if info.data and 'new_password' in info.data and v != info.data['new_password']:
+            raise ValueError('As senhas não correspondem')
+        return v
+    
+class PasswordRecoveryRequest(BaseModel):
+    """Schema para solicitar a recuperação de senha."""
+    email: EmailStr
+
+class PasswordResetForm(BaseModel):
+    """
+    Schema para o formulário de reset (definição) de nova senha.
+    Utilizado quando o usuário já tem o token de recuperação.
+    """
+    token: str 
+    new_password: str
+    new_password_confirm: str
+
+    @field_validator('new_password_confirm')
+    @classmethod
+    def passwords_match(cls, v: str, info: ValidationInfo) -> str:
+        """Verifica se a nova senha e a confirmação correspondem."""
+        if info.data and 'new_password' in info.data and v != info.data['new_password']:
+            raise ValueError('As senhas não correspondem')
+        return v
+
+================================================================================
+Capítulo 18: docker-compose.yml
+================================================================================
+
+# docker-compose.yml
+
+# Versão
+version: '3.8'
+
+# Serviços
+services:
+  web:
+    build: . 
+    container_name: mvp_fastapi_app
+    command: uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload 
+    volumes:
+      - .:/usr/src/app
+    ports:
+      - "8000:8000" 
+    environment:
+      - PYTHONUNBUFFERED=1 
+      - DATABASE_URL=postgresql://mvp_user:mvp_password@db:5432/mvp_db
+      - SECRET_KEY=03RRXfZGfmUTPXjZlctCpvvP1Dw1VBeZ
+    depends_on:
+      - db
+    networks:
+      - mvp_network
+
+  db:
+    image: postgres:15-alpine 
+    container_name: mvp_postgres_db
+    volumes:
+      - postgres_data:/var/lib/postgresql/data/ 
+    environment:
+      - POSTGRES_USER=mvp_user
+      - POSTGRES_PASSWORD=mvp_password
+      - POSTGRES_DB=mvp_db
+    ports:
+      - "5432:5432" 
+    networks: 
+      - mvp_network
+    restart: unless-stopped
+
+volumes:
+  postgres_data: 
+
+networks: 
+  mvp_network:
+    driver: bridge
+
+================================================================================
+Capítulo 19: tests/api/v1/test_auth_endpoints.py
+================================================================================
+
+# tests/api/v1/test_auth_endpoints.py
+
+# =======================================================================================================
+# --- Importações ---                                                                               #####
+# =======================================================================================================
+
+from datetime import datetime, timedelta, timezone
+from typing import Any, Dict
+
+from fastapi.testclient import TestClient
+from jose import jwt
+from sqlalchemy.orm import Session
+from _pytest.capture import CaptureFixture
+
+from app.core.config import settings
+from app.schemas.user import UserCreate
+from app.crud import user as crud_user
+from app.core import security
+
+# =======================================================================================================
+# --- Testes para Endpoints de Autenticação ---                                                      #####
+# =======================================================================================================
+
+def test_read_root(client: TestClient) -> None:
+    """Testa o endpoint raiz '/'."""
+    response = client.get("/")
+    assert response.status_code == 200
+    assert "message" in response.json()
+    assert settings.PROJECT_NAME in response.json()["message"]
+
+
+def test_health_check(client: TestClient) -> None:
+    """Testa o endpoint de health check '/health'."""
+    response = client.get("/health")
+    assert response.status_code == 200
+    assert response.json() == {"status": "ok"}
+
+
+def test_register_new_user(client: TestClient, db_session: Session) -> None:
+    """
+    Testa o endpoint de registro de novo usuário (/api/v1/auth/register).
+    Verifica:
+    - Registro bem-sucedido com dados válidos.
+    - Resposta correta (status 201, dados do usuário).
+    - Usuário é realmente criado no banco de dados.
+    - Tentativa de registro com e-mail duplicado resulta em erro 400.
+    """
+    # Cenário 1: Registro bem-sucedido
+    user_data = {
+        "email": "testregister@example.com",
+        "password": "aSecurePassword123",
+        "full_name": "Test Register User"
+    }
+    response = client.post(f"{settings.API_V1_STR}/auth/register", json=user_data)
+
+    assert response.status_code == 201, f"Status code should be 201. Response: {response.text}"
+    created_user_data = response.json()
+    assert created_user_data["email"] == user_data["email"]
+    assert created_user_data["full_name"] == user_data["full_name"]
+    assert "id" in created_user_data
+    assert "hashed_password" not in created_user_data 
+
+    # Verifica no banco se o usuário foi realmente criado
+    db_user = crud_user.get_user_by_email(db_session, email=user_data["email"])
+    assert db_user is not None
+    assert db_user.email == user_data["email"]
+    assert db_user.full_name == user_data["full_name"]
+    assert db_user.is_active is True 
+
+    # Cenário 2: Tentativa de registro com e-mail duplicado
+    response_duplicate = client.post(f"{settings.API_V1_STR}/auth/register", json=user_data)
+    assert response_duplicate.status_code == 400, \
+        f"Status code for duplicate email should be 400. Response: {response_duplicate.text}"
+    error_data = response_duplicate.json()
+    assert "detail" in error_data
+    assert "already exists" in error_data["detail"].lower()
+
+
+def test_login_for_access_token(client: TestClient, db_session: Session) -> None:
+    """
+    Testa o endpoint de login (/api/v1/auth/login).
+    Verifica:
+    - Login bem-sucedido com credenciais válidas.
+    - Resposta contém access_token e token_type.
+    - Falha no login com e-mail incorreto.
+    - Falha no login com senha incorreta.
+    - Falha no login para usuário inativo.
+    """
+    base_user_email = "testlogin@example.com"
+    base_user_password = "loginPassword123"
+
+    # Cria um usuário para testar o login
+    user_in_db = UserCreate(email=base_user_email, password=base_user_password, full_name="Test Login User")
+    crud_user.create_user(db=db_session, user=user_in_db)
+
+    # Cenário 1: Login bem-sucedido
+    login_data = {"username": base_user_email, "password": base_user_password} 
+    response = client.post(f"{settings.API_V1_STR}/auth/login", data=login_data) 
+
+    assert response.status_code == 200, f"Status code should be 200. Response: {response.text}"
+    token_data = response.json()
+    assert "access_token" in token_data
+    assert token_data["token_type"] == "bearer"
+
+    # Cenário 2: E-mail incorreto
+    login_data_wrong_email = {"username": "wrong@example.com", "password": base_user_password}
+    response_wrong_email = client.post(f"{settings.API_V1_STR}/auth/login", data=login_data_wrong_email)
+    assert response_wrong_email.status_code == 401, \
+        f"Status code for wrong email should be 401. Response: {response_wrong_email.text}"
+
+    # Cenário 3: Senha incorreta
+    login_data_wrong_password = {"username": base_user_email, "password": "wrongPassword"}
+    response_wrong_password = client.post(f"{settings.API_V1_STR}/auth/login", data=login_data_wrong_password)
+    assert response_wrong_password.status_code == 401, \
+        f"Status code for wrong password should be 401. Response: {response_wrong_password.text}"
+
+    # Cenário 4: Usuário inativo
+    user_from_db = crud_user.get_user_by_email(db=db_session, email=base_user_email)
+    assert user_from_db is not None
+    user_from_db.is_active = False
+    db_session.add(user_from_db)
+    db_session.commit()
+    db_session.refresh(user_from_db)
+
+    response_inactive = client.post(f"{settings.API_V1_STR}/auth/login", data=login_data)
+    assert response_inactive.status_code == 400, \
+        f"Status code for inactive user login should be 400. Response: {response_inactive.text}"
+
+
+def get_valid_token_headers(client: TestClient, db: Session, email: str, password: str) -> Dict[str, str]:
+    """Gera e retorna cabeçalhos de autorização com um token válido."""
+    login_data = {"username": email, "password": password}
+    response = client.post(f"{settings.API_V1_STR}/auth/login", data=login_data)
+    response.raise_for_status()
+    tokens = response.json()
+    access_token = tokens["access_token"]
+    return {"Authorization": f"Bearer {access_token}"}
+
+
+def test_read_users_me(client: TestClient, db_session: Session) -> None:
+    """
+    Testa o endpoint /me para obter o usuário atual.
+    Verifica:
+    - Acesso bem-sucedido com token válido de usuário ativo.
+    - Falha de acesso sem token (401).
+    - Falha de acesso com token inválido (401).
+    - Falha de acesso com token de usuário inativo (cobre get_current_active_user).
+    """
+    user_email = "testme@example.com"
+    user_password = "mePassword123"
+    user_full_name = "Test Me User"
+
+    # Cria um usuário ativo
+    user_in_create = UserCreate(email=user_email, password=user_password, full_name=user_full_name, is_active=True)
+    created_user = crud_user.create_user(db=db_session, user=user_in_create)
+
+    # Cenário 1: Acesso bem-sucedido com token válido
+    headers = get_valid_token_headers(client, db_session, user_email, user_password)
+    response = client.get(f"{settings.API_V1_STR}/auth/me", headers=headers)
+    assert response.status_code == 200, f"Status code should be 200. Response: {response.text}"
+    current_user_data = response.json()
+    assert current_user_data["email"] == user_email
+    assert current_user_data["full_name"] == user_full_name
+    assert current_user_data["id"] == created_user.id
+
+    # Cenário 2: Falha de acesso sem token
+    response_no_token = client.get(f"{settings.API_V1_STR}/auth/me")
+    assert response_no_token.status_code == 401, \
+        f"Status code without token should be 401. Response: {response_no_token.text}"
+
+    # Cenário 3: Falha de acesso com token inválido
+    invalid_headers = {"Authorization": "Bearer aninvalidtoken"}
+    response_invalid_token = client.get(f"{settings.API_V1_STR}/auth/me", headers=invalid_headers)
+    assert response_invalid_token.status_code == 401, \
+        f"Status code with invalid token should be 401. Response: {response_invalid_token.text}"
+
+    # Cenário 4: Falha de acesso com token de usuário inativo
+    created_user_model = crud_user.get_user_by_email(db_session, email=user_email)
+    assert created_user_model is not None
+    created_user_model.is_active = False
+    db_session.add(created_user_model)
+    db_session.commit()
+    response_inactive_user = client.get(f"{settings.API_V1_STR}/auth/me", headers=headers)
+    assert response_inactive_user.status_code == 400, \
+        f"Status code with token of inactive user should be 400. Response: {response_inactive_user.text}"
+    
+
+def test_read_current_superuser_as_superuser(client: TestClient, db_session: Session) -> None:
+    """
+    Testa o acesso ao endpoint de superusuário por um superusuário ativo.
+    """
+    superuser_email = "superuser@example.com"
+    superuser_password = "superPassword123"
+    
+    # Cria um superusuário ativo
+    user_in_create = UserCreate(
+        email=superuser_email,
+        password=superuser_password,
+        full_name="Super User Test",
+        is_active=True,
+        is_superuser=True
+    )
+    crud_user.create_user(db=db_session, user=user_in_create)
+
+    headers = get_valid_token_headers(client, db_session, superuser_email, superuser_password)
+    response = client.get(f"{settings.API_V1_STR}/auth/me/superuser", headers=headers)
+    
+    assert response.status_code == 200, \
+        f"Superuser should access superuser endpoint. Response: {response.text}"
+    returned_user = response.json()
+    assert returned_user["email"] == superuser_email
+    assert returned_user["is_superuser"] is True
+
+
+def test_read_current_superuser_as_normal_user(client: TestClient, db_session: Session) -> None:
+    """
+    Testa a falha de acesso ao endpoint de superusuário por um usuário normal ativo.
+    """
+    normal_user_email = "normaluser_for_superuser_test@example.com"
+    normal_user_password = "normalPassword123"
+
+    # Cria um usuário normal ativo
+    user_in_create = UserCreate(
+        email=normal_user_email,
+        password=normal_user_password,
+        full_name="Normal User Test",
+        is_active=True,
+        is_superuser=False
+    )
+    crud_user.create_user(db=db_session, user=user_in_create)
+
+    headers = get_valid_token_headers(client, db_session, normal_user_email, normal_user_password)
+    response = client.get(f"{settings.API_V1_STR}/auth/me/superuser", headers=headers)
+    
+    assert response.status_code == 403, \
+        f"Normal user should get 403 on superuser endpoint. Response: {response.text}"
+    error_data = response.json()
+    assert "detail" in error_data
+    assert "doesn't have enough privileges" in error_data["detail"]
+
+
+def test_read_current_superuser_as_inactive_superuser(client: TestClient, db_session: Session) -> None:
+    """
+    Testa a falha de acesso ao endpoint de superusuário por um superusuário inativo.
+    A dependência get_current_active_user (que get_current_active_superuser usa)
+    deve barrar o acesso antes mesmo da verificação de superusuário.
+    """
+    inactive_superuser_email = "inactivesuper@example.com"
+    inactive_superuser_password = "inactiveSuperPass"
+
+    user_in_create = UserCreate(
+        email=inactive_superuser_email,
+        password=inactive_superuser_password,
+        full_name="Inactive Super User",
+        is_active=False,
+        is_superuser=True
+    )
+    crud_user.create_user(db=db_session, user=user_in_create)
+    
+    temp_active_email = "temp_active_for_inactive_test@example.com"
+    crud_user.create_user(db=db_session, user=UserCreate(email=temp_active_email, password=inactive_superuser_password, is_active=True, is_superuser=True))
+    
+    user_to_make_inactive = crud_user.get_user_by_email(db_session, temp_active_email)
+    assert user_to_make_inactive is not None
+    
+    headers = get_valid_token_headers(client, db_session, temp_active_email, inactive_superuser_password) # Obtém token enquanto ativo
+
+    user_to_make_inactive.is_active = False 
+    db_session.add(user_to_make_inactive)
+    db_session.commit()
+
+    response = client.get(f"{settings.API_V1_STR}/auth/me/superuser", headers=headers)
+    
+    assert response.status_code == 400, \
+        f"Inactive superuser should get 400. Response: {response.text}"
+    error_data = response.json()
+    assert "detail" in error_data
+    assert "Inactive user" in error_data["detail"]
+
+
+def test_token_data_validation_error_in_get_current_user(client: TestClient):
+    """
+    Força um ValidationError ao criar TokenData dentro de get_current_user.
+    O 'sub' do token é uma string, mas não é um email válido para Pydantic EmailStr.
+    """
+    payload_invalid_email_format: Dict[str, Any] = {
+        "sub": "plainstringnotaschemaemail",
+        "exp": datetime.now(timezone.utc) + timedelta(minutes=settings.ACCESS_TOKEN_EXPIRE_MINUTES)
+    }
+    token = jwt.encode(payload_invalid_email_format, settings.SECRET_KEY, algorithm=settings.ALGORITHM)
+    headers = {"Authorization": f"Bearer {token}"}
+    response = client.get(f"{settings.API_V1_STR}/auth/me", headers=headers)
+    assert response.status_code == 401
+    assert "Could not validate credentials" in response.json()["detail"]
+
+
+def test_get_current_user_with_invalid_sub_format(client: TestClient, db_session: Session) -> None:
+    """Testa get_current_user com um 'sub' no token que não é um e-mail válido."""
+    invalid_sub_payload: Dict[str, Any] = {
+        "sub": "not-an-email",
+        "exp": datetime.now(timezone.utc) + timedelta(minutes=15)
+    }
+    invalid_sub_token = jwt.encode(invalid_sub_payload, settings.SECRET_KEY, algorithm=settings.ALGORITHM)
+    headers = {"Authorization": f"Bearer {invalid_sub_token}"}
+
+    response = client.get(f"{settings.API_V1_STR}/auth/me", headers=headers)
+    assert response.status_code == 401
+
+
+def test_get_current_user_with_token_missing_sub_claim(client: TestClient) -> None:
+    """
+    Testa get_current_user com um token JWT que é válido mas não contém a claim 'sub'.
+    Isso deve acionar a credentials_exception quando token_email_from_payload é None.
+    """
+    exp_time_minutes = settings.ACCESS_TOKEN_EXPIRE_MINUTES
+    payload_missing_sub: Dict[str, Any] = {
+        "user_id": 123, # Alguma outra claim
+        "exp": datetime.now(timezone.utc) + timedelta(minutes=exp_time_minutes)
+    }
+    token_missing_sub = jwt.encode(payload_missing_sub, settings.SECRET_KEY, algorithm=settings.ALGORITHM)
+    headers = {"Authorization": f"Bearer {token_missing_sub}"}
+
+    response = client.get(f"{settings.API_V1_STR}/auth/me", headers=headers)
+    assert response.status_code == 401
+    assert "Could not validate credentials" in response.json()["detail"]
+
+
+def test_get_current_user_with_valid_token_for_nonexistent_user(client: TestClient, db_session: Session) -> None:
+    """
+    Testa get_current_user com um token JWT válido, mas para um email
+    que não existe mais no banco de dados.
+    Isso deve cobrir o 'if user is None: raise credentials_exception'.
+    """
+    non_existent_email = "iamnotinthedb@example.com"
+    exp_time_minutes = settings.ACCESS_TOKEN_EXPIRE_MINUTES
+    
+    payload: Dict[str, Any] = {
+        "sub": non_existent_email,
+        "exp": datetime.now(timezone.utc) + timedelta(minutes=exp_time_minutes)
+    }
+    token = jwt.encode(payload, settings.SECRET_KEY, algorithm=settings.ALGORITHM)
+    headers = {"Authorization": f"Bearer {token}"}
+
+    response = client.get(f"{settings.API_V1_STR}/auth/me", headers=headers)
+    
+    assert response.status_code == 401 
+    assert "Could not validate credentials" in response.json()["detail"]
+
+def test_update_user_me_full_name(client: TestClient, db_session: Session) -> None:
+    """Testa a atualização do full_name do usuário autenticado."""
+    user_email = "updateprofile@example.com"
+    user_password = "profilePassword123"
+    user_full_name_initial = "Initial Profile Name"
+    crud_user.create_user(db_session, UserCreate(email=user_email, password=user_password, full_name=user_full_name_initial))
+    
+    headers = get_valid_token_headers(client, db_session, user_email, user_password)
+    
+    new_full_name = "Updated Profile Name"
+    update_payload = {"full_name": new_full_name}
+    
+    response = client.patch(f"{settings.API_V1_STR}/auth/me", headers=headers, json=update_payload)
+    
+    assert response.status_code == 200, response.text
+    updated_user_data = response.json()
+    assert updated_user_data["email"] == user_email 
+    assert updated_user_data["full_name"] == new_full_name
+    assert updated_user_data["is_active"] is True 
+
+
+def test_update_user_me_email(client: TestClient, db_session: Session) -> None:
+    """Testa a atualização do email do usuário autenticado."""
+    user_email_initial = "updateemail_initial@example.com"
+    user_password = "emailPassword123"
+    crud_user.create_user(db_session, UserCreate(email=user_email_initial, password=user_password, full_name="Email User"))
+    
+    headers = get_valid_token_headers(client, db_session, user_email_initial, user_password)
+    
+    user_email_new = "updateemail_new@example.com"
+    update_payload = {"email": user_email_new}
+    
+    response = client.patch(f"{settings.API_V1_STR}/auth/me", headers=headers, json=update_payload)
+    
+    assert response.status_code == 200, response.text
+    updated_user_data = response.json()
+    assert updated_user_data["email"] == user_email_new
+    
+    new_login_headers = get_valid_token_headers(client, db_session, user_email_new, user_password)
+    response_me_new_email = client.get(f"{settings.API_V1_STR}/auth/me", headers=new_login_headers)
+    assert response_me_new_email.status_code == 200
+
+
+def test_update_user_me_email_conflict(client: TestClient, db_session: Session) -> None:
+    """Testa a tentativa de atualizar o email para um já existente por outro usuário."""
+    user1_email = "user1_conflict@example.com"
+    user1_password = "password1"
+    crud_user.create_user(db_session, UserCreate(email=user1_email, password=user1_password, full_name="User One"))
+
+    user2_email = "user2_tryingtoconflict@example.com"
+    user2_password = "password2"
+    crud_user.create_user(db_session, UserCreate(email=user2_email, password=user2_password, full_name="User Two"))
+
+    headers_user2 = get_valid_token_headers(client, db_session, user2_email, user2_password)
+    
+    update_payload = {"email": user1_email}
+    response = client.patch(f"{settings.API_V1_STR}/auth/me", headers=headers_user2, json=update_payload)
+    
+    assert response.status_code == 400, response.text
+    assert "Email already registered" in response.json()["detail"]
+
+
+def test_update_user_me_cannot_change_status(client: TestClient, db_session: Session) -> None:
+    """Testa que o usuário não pode mudar is_active ou is_superuser via PATCH /me."""
+    user_email = "statuschange@example.com"
+    user_password = "statusPassword123"
+    crud_user.create_user(db_session, UserCreate(email=user_email, password=user_password, is_active=True, is_superuser=False))
+    
+    headers = get_valid_token_headers(client, db_session, user_email, user_password)
+    
+    update_payload: Dict[str, Any] = { 
+        "is_active": False,         
+        "is_superuser": True,       
+        "full_name": "New Name"     
+    }
+    response = client.patch(f"{settings.API_V1_STR}/auth/me", headers=headers, json=update_payload)
+    
+    assert response.status_code == 200, response.text
+    updated_data = response.json()
+    assert updated_data["full_name"] == "New Name"
+    assert updated_data["is_active"] is True    
+    assert updated_data["is_superuser"] is False
+
+
+def test_update_current_user_password_success(client: TestClient, db_session: Session) -> None:
+    """Testa a mudança de senha bem-sucedida do usuário autenticado."""
+    user_email = "changepass@example.com"
+    old_password = "oldPassword123"
+    new_password = "newSecurePassword456"
+
+    crud_user.create_user(db_session, UserCreate(email=user_email, password=old_password))
+    headers = get_valid_token_headers(client, db_session, user_email, old_password)
+
+    password_change_data = {
+        "current_password": old_password,
+        "new_password": new_password,
+        "new_password_confirm": new_password
+    }
+    response = client.put(
+        f"{settings.API_V1_STR}/auth/me/password", headers=headers, json=password_change_data
+    )
+    assert response.status_code == 204, response.text
+
+    login_with_new_pass_data = {"username": user_email, "password": new_password}
+    response_login_new = client.post(
+        f"{settings.API_V1_STR}/auth/login", data=login_with_new_pass_data
+    )
+    assert response_login_new.status_code == 200, response_login_new.text
+
+    login_with_old_pass_data = {"username": user_email, "password": old_password}
+    response_login_old = client.post(
+        f"{settings.API_V1_STR}/auth/login", data=login_with_old_pass_data
+    )
+    assert response_login_old.status_code == 401, response_login_old.text
+
+
+def test_update_current_user_password_wrong_current_password(client: TestClient, db_session: Session) -> None:
+    """Testa a falha na mudança de senha quando a senha atual fornecida está incorreta."""
+    user_email = "wrongcurrpass@example.com"
+    correct_current_password = "correctPassword"
+    new_password = "newPassword"
+    crud_user.create_user(db_session, UserCreate(email=user_email, password=correct_current_password))
+    headers = get_valid_token_headers(client, db_session, user_email, correct_current_password)
+
+    password_change_data = {
+        "current_password": "thisIsTheWrongCurrentPassword",
+        "new_password": new_password,
+        "new_password_confirm": new_password
+    }
+    response = client.put(
+        f"{settings.API_V1_STR}/auth/me/password", headers=headers, json=password_change_data
+    )
+    assert response.status_code == 400, response.text
+    assert "Incorrect current password" in response.json()["detail"]
+
+
+def test_update_current_user_password_new_passwords_mismatch(client: TestClient, db_session: Session) -> None:
+    """Testa a falha na mudança de senha quando a nova senha e a confirmação não correspondem."""
+    user_email = "passmismatch@example.com"
+    current_password = "currentPassword"
+    crud_user.create_user(db_session, UserCreate(email=user_email, password=current_password))
+    headers = get_valid_token_headers(client, db_session, user_email, current_password)
+
+    password_change_data = {
+        "current_password": current_password,
+        "new_password": "newPassword1",
+        "new_password_confirm": "newPassword2" 
+    }
+    response = client.put(
+        f"{settings.API_V1_STR}/auth/me/password", headers=headers, json=password_change_data
+    )
+    assert response.status_code == 422, response.text 
+    error_detail = response.json()["detail"][0]
+    assert error_detail["type"] == "value_error"
+    assert "As senhas não correspondem" in error_detail["msg"]
+
+
+def test_update_current_user_password_new_same_as_old(client: TestClient, db_session: Session) -> None:
+    """Testa a falha na mudança de senha quando a nova senha é igual à senha antiga."""
+    user_email = "pass_same_as_old@example.com"
+    current_password = "samePassword123"
+    crud_user.create_user(db_session, UserCreate(email=user_email, password=current_password))
+    headers = get_valid_token_headers(client, db_session, user_email, current_password)
+
+    password_change_data = {
+        "current_password": current_password,
+        "new_password": current_password, 
+        "new_password_confirm": current_password
+    }
+    response = client.put(
+        f"{settings.API_V1_STR}/auth/me/password", headers=headers, json=password_change_data
+    )
+    assert response.status_code == 400, response.text
+    assert "New password cannot be the same" in response.json()["detail"]
+
+
+def test_delete_user_me_success(client: TestClient, db_session: Session) -> None:
+    """Testa a deleção bem-sucedida da conta do usuário autenticado."""
+    user_email = "delete_my_account@example.com"
+    user_password = "deleteMePassword123"
+
+    user_to_delete = crud_user.create_user(
+        db_session, UserCreate(email=user_email, password=user_password)
+    )
+    user_id_before_delete = user_to_delete.id
+
+    headers = get_valid_token_headers(client, db_session, user_email, user_password)
+
+    response_delete = client.delete(f"{settings.API_V1_STR}/auth/me", headers=headers)
+    assert response_delete.status_code == 204, \
+        f"Status code should be 204 No Content. Response: {response_delete.content}" 
+
+    user_in_db_after_delete = crud_user.get_user(db_session, user_id=user_id_before_delete)
+    assert user_in_db_after_delete is None, "User should no longer exist in DB after deletion."
+
+    response_me_after_delete = client.get(f"{settings.API_V1_STR}/auth/me", headers=headers)
+    assert response_me_after_delete.status_code == 401, \
+        "Accessing /me with token of deleted user should result in 401 (user not found)."
+    
+    login_data_deleted_user = {"username": user_email, "password": user_password}
+    response_login_deleted = client.post(
+        f"{settings.API_V1_STR}/auth/login", data=login_data_deleted_user
+    )
+    assert response_login_deleted.status_code == 401, \
+        "Login attempt for a deleted user should result in 401."
+
+
+def test_delete_user_me_no_token(client: TestClient) -> None:
+    """Testa a falha ao tentar deletar sem um token de autenticação."""
+    response = client.delete(f"{settings.API_V1_STR}/auth/me")
+    assert response.status_code == 401, \
+        "Attempting to delete /me without a token should result in 401."
+
+
+def test_delete_user_me_invalid_token(client: TestClient) -> None:
+    """Testa a falha ao tentar deletar com um token inválido."""
+    headers = {"Authorization": "Bearer aninvalidtoken"}
+    response = client.delete(f"{settings.API_V1_STR}/auth/me", headers=headers)
+    assert response.status_code == 401, \
+        "Attempting to delete /me with an invalid token should result in 401."
+    
+
+def test_request_password_recovery_user_exists(
+    client: TestClient,
+    db_session: Session,
+    capsys: CaptureFixture[str] 
+) -> None:
+    """Testa a solicitação de recuperação de senha para um usuário existente."""
+    user_email = "recovermyP4ssw0rd@example.com"
+    user_password = "oldPassword123"
+    crud_user.create_user(db_session, UserCreate(email=user_email, password=user_password))
+
+    recovery_payload = {"email": user_email}
+    response = client.post(f"{settings.API_V1_STR}/auth/password-recovery", json=recovery_payload)
+
+    assert response.status_code == 200, response.text
+    assert response.json() == {"message": "Se um usuário com este email existir, um link de recuperação foi enviado."}
+    
+    captured = capsys.readouterr()
+    assert "SIMULAÇÃO DE ENVIO DE E-MAIL" in captured.out
+    assert f"Para: {user_email}" in captured.out
+    assert "Use o seguinte token para resetar sua senha" in captured.out
+
+
+def test_request_password_recovery_user_does_not_exist(
+    client: TestClient,
+    db_session: Session,
+    capsys: CaptureFixture[str] 
+) -> None:
+    """
+    Testa a solicitação de recuperação de senha para um e-mail não existente.
+    Deve retornar a mesma mensagem genérica para não revelar a existência do usuário.
+    """
+    non_existent_email = "idonotexist@example.com"
+    recovery_payload = {"email": non_existent_email}
+    response = client.post(f"{settings.API_V1_STR}/auth/password-recovery", json=recovery_payload)
+
+    assert response.status_code == 200, response.text
+    assert response.json() == {"message": "Se um usuário com este email existir, um link de recuperação foi enviado."}
+    
+    captured = capsys.readouterr()
+    assert "SIMULAÇÃO DE ENVIO DE E-MAIL" not in captured.out 
+
+
+def test_reset_user_password_success(
+    client: TestClient,
+    db_session: Session,
+    capsys: CaptureFixture[str] 
+) -> None:
+    """Testa o reset de senha bem-sucedido com um token válido."""
+    user_email = "resetthispassword@example.com"
+    old_password = "oldPassword"
+    new_password = "aBrandNewPassword123"
+
+    _ = crud_user.create_user(db_session, UserCreate(email=user_email, password=old_password))
+    
+    reset_token = security.create_password_reset_token(email=user_email)
+
+    reset_form_data = {
+        "token": reset_token,
+        "new_password": new_password,
+        "new_password_confirm": new_password
+    }
+    response = client.post(f"{settings.API_V1_STR}/auth/reset-password/", json=reset_form_data)
+    assert response.status_code == 204, response.content 
+
+    login_data = {"username": user_email, "password": new_password}
+    response_login = client.post(f"{settings.API_V1_STR}/auth/login", data=login_data)
+    assert response_login.status_code == 200, response_login.text
+    assert "access_token" in response_login.json()
+
+    login_data_old_pass = {"username": user_email, "password": old_password}
+    response_login_old = client.post(f"{settings.API_V1_STR}/auth/login", data=login_data_old_pass)
+    assert response_login_old.status_code == 401, response_login_old.text
+
+    captured = capsys.readouterr()
+    assert "Sua senha foi alterada com sucesso." in captured.out
+    assert f"Para: {user_email}" in captured.out
+
+
+def test_reset_user_password_invalid_token(client: TestClient, db_session: Session) -> None:
+    """Testa a falha no reset de senha com um token inválido ou expirado."""
+    new_password = "newPasswordAttempt"
+    reset_form_data_invalid_token = {
+        "token": "this.is.an.invalid.token",
+        "new_password": new_password,
+        "new_password_confirm": new_password
+    }
+    response = client.post(f"{settings.API_V1_STR}/auth/reset-password/", json=reset_form_data_invalid_token)
+    assert response.status_code == 400, response.text
+    assert "Token de recuperação de senha inválido ou expirado" in response.json()["detail"]
+
+    user_email_for_expired_token = "expiredtokenuser@example.com"
+    _ = crud_user.create_user(db_session, UserCreate(email=user_email_for_expired_token, password="password"))
+    
+    expired_like_token_payload: Dict[str, Any] = {
+        "sub": user_email_for_expired_token,
+        "type": "not_password_reset",
+        "exp": datetime.now(timezone.utc) - timedelta(hours=settings.PASSWORD_RESET_TOKEN_EXPIRE_HOURS + 1)
+    }
+    expired_token = jwt.encode(expired_like_token_payload, settings.SECRET_KEY, algorithm=settings.ALGORITHM)
+
+    reset_form_data_expired_token = {
+        "token": expired_token,
+        "new_password": new_password,
+        "new_password_confirm": new_password
+    }
+    response_expired = client.post(f"{settings.API_V1_STR}/auth/reset-password/", json=reset_form_data_expired_token)
+    assert response_expired.status_code == 400, response_expired.text
+    assert "Token de recuperação de senha inválido ou expirado" in response_expired.json()["detail"]
+
+
+def test_reset_user_password_user_not_found_with_valid_token_logic(client: TestClient, db_session: Session) -> None:
+    """
+    Testa o cenário onde um token de reset é válido, mas o usuário
+    (identificado pelo email no token) não existe mais no banco.
+    Isso é um caso de borda, pois o token só deveria ser gerado para usuários existentes.
+    """
+    email_in_valid_token = "user_that_will_be_deleted@example.com"
+    new_password = "newPasswordIfUserExisted"
+
+    reset_token = security.create_password_reset_token(email=email_in_valid_token)
+
+    reset_form_data = {
+        "token": reset_token,
+        "new_password": new_password,
+        "new_password_confirm": new_password
+    }
+    response = client.post(f"{settings.API_V1_STR}/auth/reset-password/", json=reset_form_data)
+    assert response.status_code == 404, response.text 
+    assert "Usuário não encontrado" in response.json()["detail"]
+
+
+def test_reset_user_password_inactive_user(client: TestClient, db_session: Session) -> None:
+    """Testa o reset de senha para um usuário que está inativo."""
+    user_email = "inactive_reset@example.com"
+    old_password = "oldPassword"
+    new_password = "newPasswordForInactive"
+
+    user_db = crud_user.create_user(db_session, UserCreate(email=user_email, password=old_password))
+    user_db.is_active = False
+    db_session.add(user_db)
+    db_session.commit()
+    db_session.refresh(user_db)
+    
+    reset_token = security.create_password_reset_token(email=user_email)
+    reset_form_data = {
+        "token": reset_token,
+        "new_password": new_password,
+        "new_password_confirm": new_password
+    }
+    response = client.post(f"{settings.API_V1_STR}/auth/reset-password/", json=reset_form_data)
+    assert response.status_code == 400, response.text
+    assert "Usuário inativo" in response.json()["detail"]
+
+
+def test_reset_user_password_passwords_mismatch(client: TestClient, db_session: Session) -> None:
+    """Testa a falha no reset de senha quando a nova senha e a confirmação não correspondem."""
+    user_email = "reset_mismatch@example.com"
+    crud_user.create_user(db_session, UserCreate(email=user_email, password="password"))
+    reset_token = security.create_password_reset_token(email=user_email)
+
+    reset_form_data = {
+        "token": reset_token,
+        "new_password": "newPassword1",
+        "new_password_confirm": "newPassword2Different" 
+    }
+    response = client.post(f"{settings.API_V1_STR}/auth/reset-password/", json=reset_form_data)
+    assert response.status_code == 422, response.text 
+    error_detail = response.json()["detail"][0]
+    assert error_detail["type"] == "value_error"
+    assert "As senhas não correspondem" in error_detail["msg"]
+
+================================================================================
+Capítulo 20: tests/conftest.py
+================================================================================
+
+# etapa1_mvp/conftest.py
+
+# =======================================================================================================
+# --- Importações ---                                                                               #####
+# =======================================================================================================
+
+import pytest
+from typing import Generator
+
+from fastapi.testclient import TestClient
+from sqlalchemy import create_engine
+from sqlalchemy.orm import sessionmaker, Session
+from sqlalchemy.pool import StaticPool
+
+from app.main import app 
+from app.api.deps import get_db
+from app.db.base_class import Base 
+from app.core.config import settings
+
+# =======================================================================================================
+# --- Configurações de URL e Fixtures ---                                                           #####
+# =======================================================================================================
+
+# --- URL do banco de dados de teste ---
+actual_test_db_url: str = settings.DATABASE_URL_TEST if settings.DATABASE_URL_TEST is not None else "sqlite:///:memory:"
+"""
+URL do banco de dados usada para os testes. Prioriza DATABASE_URL_TEST se definida,
+senão utiliza um banco de dados SQLite em memória para execução rápida.
+"""
+
+# --- Engine e Session para Testes ---
+if actual_test_db_url.startswith("sqlite"):
+    engine_test = create_engine(
+        actual_test_db_url,
+        connect_args={"check_same_thread": False},
+        poolclass=StaticPool,
+    )
+else:
+    engine_test = create_engine(actual_test_db_url)
+TestingSessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine_test)
+"""
+Fábrica de sessões SQLAlchemy configurada para o banco de dados de teste.
+As sessões não farão autocommit ou autoflush, permitindo controle transacional nos testes.
+"""
+
+# --- Fixture para criar o schema do banco de dados de teste antes dos testes ---
+@pytest.fixture(scope="session", autouse=True)
+def setup_test_db():
+    """
+    Fixture de escopo de sessão para configurar o schema do banco de dados de teste.
+    Cria todas as tabelas no início da sessão de teste e as remove no final,
+    a menos que seja um banco SQLite em memória.
+    O 'autouse=True' garante que esta fixture seja executada automaticamente para a sessão.
+    """
+    Base.metadata.create_all(bind=engine_test)
+    yield
+    if not actual_test_db_url.startswith("sqlite:///:memory:"):
+        Base.metadata.drop_all(bind=engine_test)
+
+# --- Fixture para fornecer uma sessão de banco de dados para os testes ---
+@pytest.fixture(scope="function") 
+def db_session() -> Generator[Session, None, None]:
+    """
+    Fixture de escopo de função que fornece uma sessão transacional do banco de dados de teste.
+    Cria as tabelas (segurança para SQLite em memória), inicia uma transação,
+    fornece a sessão ao teste e faz rollback da transação após o teste,
+    garantindo isolamento e um estado limpo para o próximo teste.
+    """
+    Base.metadata.create_all(bind=engine_test)
+    connection = engine_test.connect()
+    transaction = connection.begin()
+    session = TestingSessionLocal(bind=connection)
+    yield session
+    session.close()
+    transaction.rollback()
+    connection.close() 
+
+# --- Fixture para o TestClient, sobrescrevendo a dependência get_db ---
+@pytest.fixture(scope="function")
+def client(db_session: Session) -> Generator[TestClient, None, None]:
+    """
+    Fixture de escopo de função que fornece um FastAPI TestClient.
+    Este client é configurado para usar o banco de dados de teste,
+    sobrescrevendo a dependência 'get_db' da aplicação PARA CADA TESTE.
+    Usa a fixture 'db_session' (também de escopo de função).
+    """
+    def override_get_db() -> Generator[Session, None, None]:
+        """Sobrescreve a dependência get_db para usar a sessão de teste."""
+        try:
+            yield db_session
+        finally:
+            pass
+
+    app.dependency_overrides[get_db] = override_get_db
+    with TestClient(app) as c:
+        yield c
+    del app.dependency_overrides[get_db]
+
+================================================================================
+Capítulo 21: tests/core/test_security.py
+================================================================================
+
+# tests/core/test_security.py
+
+# =======================================================================================================
+# --- Importações ---                                                                               #####
+# =======================================================================================================
+
+from app.core.security import (
+    create_access_token,
+    create_refresh_token,
+    decode_token,
+    get_password_hash,
+    get_subject_from_token,
+    verify_password,
+)
+from jose import jwt
+from app.core.config import settings
+from datetime import datetime, timedelta, timezone
+from typing import Dict, Any 
+
+# =======================================================================================================
+# --- Testes ---                                                                                    #####
+# =======================================================================================================
+
+def test_password_hashing_and_verification():
+    """
+    Testa a geração de hash de senha e a verificação da senha.
+    Verifica se:
+    - O hash é diferente da senha original.
+    - A senha correta é verificada com sucesso.
+    - Uma senha incorreta falha na verificação.
+    """
+    password = "a_plain_password"
+    hashed_password = get_password_hash(password)
+    assert hashed_password != password, "Hashed password should not be the same as plain password"
+    assert verify_password(password, hashed_password), "Verification of correct password should succeed"
+    assert not verify_password("wrong_password", hashed_password), "Verification of wrong password should fail"
+
+def test_create_and_decode_access_token():
+    """
+    Testa a criação de um token de acesso JWT e sua decodificação.
+    Verifica se:
+    - Um token é gerado.
+    - O token pode ser decodificado com sucesso.
+    - O payload decodificado contém os dados esperados (subject, claims customizadas, expiração).
+    - Tokens com tempo de expiração curto também funcionam.
+    """
+    payload_data = {"sub": "testuser@example.com", "custom_claim": "custom_value"}
+    token = create_access_token(data=payload_data)
+    assert token is not None
+    assert isinstance(token, str)
+    decoded_payload = decode_token(token)
+    assert decoded_payload is not None
+    assert decoded_payload.get("sub") == payload_data["sub"]
+    assert decoded_payload.get("custom_claim") == payload_data["custom_claim"]
+    assert "exp" in decoded_payload
+    short_expires_delta = timedelta(seconds=1)
+    short_lived_token = create_access_token(data=payload_data, expires_delta=short_expires_delta)
+    decoded_short_lived_payload = decode_token(short_lived_token)
+    assert decoded_short_lived_payload is not None
+
+def test_create_and_decode_refresh_token() -> None:
+    """
+    Testa a criação de um refresh token JWT e sua decodificação.
+    Verifica se:
+    - Um token é gerado (usando a lógica de refresh token).
+    - O token pode ser decodificado com sucesso.
+    - O payload decodificado contém o subject esperado e uma expiração.
+    """
+    payload_data: Dict[str, Any] = {"sub": "refresh_user@example.com"}
+    token = create_refresh_token(data=payload_data)
+
+    assert token is not None
+    assert isinstance(token, str)
+
+    decoded_payload = decode_token(token)
+    assert decoded_payload is not None, "Refresh token should be decodable"
+    assert decoded_payload.get("sub") == payload_data["sub"], "Subject in refresh token mismatch"
+    assert "exp" in decoded_payload, "Expiration claim 'exp' should be in refresh token"
+
+    short_expires_delta = timedelta(seconds=1)
+    short_lived_token = create_refresh_token(data=payload_data, expires_delta=short_expires_delta)
+    decoded_short_lived_payload = decode_token(short_lived_token)
+    assert decoded_short_lived_payload is not None, "Short-lived refresh token should be decodable"
+
+def test_decode_and_get_subject_invalid_cases() -> None:
+    """
+    Testa a decodificação de tokens JWT inválidos e a extração de subject.
+    Verifica se:
+    - Um token com formato incorreto retorna None para decode_token e get_subject_from_token.
+    - Um token assinado com uma chave secreta errada retorna None para ambos.
+    - Um token válido mas sem a claim 'sub' retorna None para get_subject_from_token.
+    - Um token válido mas com 'sub' de tipo incorreto (ex: int) retorna None para get_subject_from_token.
+    """
+    # 1. Token com formato inválido
+    invalid_format_token = "this.is.not.a.valid.jwt"
+    assert decode_token(invalid_format_token) is None, "Token with invalid format should not be decodable"
+    assert get_subject_from_token(invalid_format_token) is None, "Subject from invalid format token should be None"
+
+    # 2. Token com assinatura errada
+    exp_time_minutes = (settings.ACCESS_TOKEN_EXPIRE_MINUTES if settings.ACCESS_TOKEN_EXPIRE_MINUTES else 30)
+    payload_data_ok: Dict[str, Any] = { 
+        "sub": "testuser@example.com",
+        "exp": datetime.now(timezone.utc) + timedelta(minutes=exp_time_minutes)
+    }
+    wrong_secret_key = "not-" + settings.SECRET_KEY
+    
+    tampered_token = jwt.encode(payload_data_ok, wrong_secret_key, algorithm=settings.ALGORITHM)
+    assert decode_token(tampered_token) is None, "Token with wrong signature should not be decodable"
+    assert get_subject_from_token(tampered_token) is None, "Subject from tampered token should be None"
+
+    # 3. Token válido, mas payload não contém 'sub'
+    payload_no_sub: Dict[str, Any] = { 
+        "another_claim": "value",
+        "exp": datetime.now(timezone.utc) + timedelta(minutes=exp_time_minutes)
+    }
+    token_no_sub = jwt.encode(payload_no_sub, settings.SECRET_KEY, algorithm=settings.ALGORITHM)
+    
+    decoded_no_sub = decode_token(token_no_sub)
+    assert decoded_no_sub is not None
+    assert decoded_no_sub.get("another_claim") == "value"
+    assert get_subject_from_token(token_no_sub) is None, "Subject from token without 'sub' claim should be None"
+
+    # 4. Token válido, 'sub' não é uma string
+    payload_sub_not_string: Dict[str, Any] = { 
+        "sub": 12345,
+        "exp": datetime.now(timezone.utc) + timedelta(minutes=exp_time_minutes)
+    }
+    token_sub_not_string = jwt.encode(payload_sub_not_string, settings.SECRET_KEY, algorithm=settings.ALGORITHM)
+    
+    decoded_sub_not_string = decode_token(token_sub_not_string)
+    assert decoded_sub_not_string is None, "Token with non-string 'sub' should fail decoding (return None)"
+    assert get_subject_from_token(token_sub_not_string) is None, "Subject from token with non-string 'sub' (which failed decoding) should be None"
+
+================================================================================
+Capítulo 22: tests/crud/test_user_crud.py
+================================================================================
+
+# tests/crud/test_user_crud.py
+
+# =======================================================================================================
+# --- Importações ---                                                                               #####
+# =======================================================================================================
+
+from sqlalchemy.orm import Session
+from typing import Dict, Any
+
+from app.crud import user as crud_user
+from app.schemas.user import UserCreate, UserUpdate
+from app.core.security import verify_password
+
+# =======================================================================================================
+# --- Testes para CRUD de Usuário ---                                                               #####
+# =======================================================================================================
+
+def test_create_user(db_session: Session) -> None:
+    """
+    Testa a criação de um novo usuário no banco de dados.
+    Verifica se:
+    - O usuário é criado com os dados corretos.
+    - A senha é armazenada com hash.
+    - Os valores padrão para 'is_active' e 'is_superuser' são aplicados.
+    """
+    user_email = "test_create@example.com"
+    user_password = "testpassword123"
+    user_full_name = "Test Create User"
+
+    user_in = UserCreate(
+        email=user_email,
+        password=user_password,
+        full_name=user_full_name
+    )
+
+    db_user = crud_user.create_user(db=db_session, user=user_in)
+
+    assert db_user is not None, "A criação do usuário deve retornar um objeto usuário."
+    assert db_user.email == user_email, "O email do usuário criado não corresponde."
+    assert db_user.full_name == user_full_name, "O nome completo do usuário criado não corresponde."
+    assert hasattr(db_user, "hashed_password"), "O usuário criado deve ter uma senha com hash."
+    assert db_user.hashed_password != user_password, "A senha com hash não deve ser igual à senha plana."
+    assert verify_password(user_password, db_user.hashed_password), "A senha plana deve ser verificável contra o hash."
+    assert db_user.is_active is True, "O usuário deve ser ativo por padrão."
+    assert db_user.is_superuser is False, "O usuário não deve ser superusuário por padrão."
+    assert db_user.id is not None, "O usuário criado deve ter um ID atribuído pelo banco."
+
+
+def test_get_user_by_email(db_session: Session) -> None:
+    """
+    Testa a recuperação de um usuário pelo seu endereço de e-mail.
+    Verifica se:
+    - Um usuário existente é retornado corretamente.
+    - None é retornado para um e-mail não existente.
+    """
+    user_email = "get_by_email@example.com"
+    user_password = "testpassword123"
+    user_in_create = UserCreate(email=user_email, password=user_password)
+    created_user = crud_user.create_user(db=db_session, user=user_in_create)
+
+    retrieved_user = crud_user.get_user_by_email(db=db_session, email=user_email)
+    assert retrieved_user is not None, "Deve encontrar o usuário pelo e-mail."
+    assert retrieved_user.id == created_user.id, "O ID do usuário recuperado não corresponde."
+    assert retrieved_user.email == user_email, "O email do usuário recuperado não corresponde."
+
+    non_existent_user = crud_user.get_user_by_email(db=db_session, email="nonexistent@example.com")
+    assert non_existent_user is None, "Não deve encontrar um usuário com e-mail não existente."
+
+
+def test_get_user_by_id(db_session: Session) -> None:
+    """
+    Testa a recuperação de um usuário pelo seu ID.
+    Verifica se:
+    - Um usuário existente é retornado corretamente pelo ID.
+    - None é retornado para um ID não existente.
+    """
+    user_email = "get_by_id@example.com"
+    user_password = "testpassword123"
+    user_in_create = UserCreate(email=user_email, password=user_password)
+    created_user = crud_user.create_user(db=db_session, user=user_in_create)
+
+    assert created_user.id is not None, "Usuário criado deve ter um ID."
+
+    retrieved_user = crud_user.get_user(db=db_session, user_id=created_user.id)
+    assert retrieved_user is not None, "Deve encontrar o usuário pelo ID."
+    assert retrieved_user.id == created_user.id, "O ID do usuário recuperado não corresponde."
+    assert retrieved_user.email == user_email, "O email do usuário recuperado não corresponde."
+
+    non_existent_user = crud_user.get_user(db=db_session, user_id=999999)
+    assert non_existent_user is None, "Não deve encontrar um usuário com ID não existente."
+
+def test_update_user_all_fields(db_session: Session) -> None:
+    """
+    Testa a atualização de todos os campos permitidos de um usuário, incluindo a senha.
+    """
+    original_email = "update_me@example.com"
+    original_password = "oldPassword123"
+    original_full_name = "Original Name"
+    user_to_update = crud_user.create_user(db_session, UserCreate(
+        email=original_email, password=original_password, full_name=original_full_name,
+        is_active=True, is_superuser=False
+    ))
+
+    new_email = "updated_email@example.com"
+    new_password = "newStrongPassword456"
+    new_full_name = "Updated Full Name"
+    update_data = UserUpdate(
+        email=new_email,
+        password=new_password,
+        full_name=new_full_name,
+        is_active=False,
+        is_superuser=True
+    )
+
+    updated_user = crud_user.update_user(db=db_session, db_user=user_to_update, user_in=update_data)
+
+    assert updated_user is not None
+    assert updated_user.id == user_to_update.id
+    assert updated_user.email == new_email
+    assert updated_user.full_name == new_full_name
+    assert updated_user.is_active is False
+    assert updated_user.is_superuser is True
+    assert verify_password(new_password, updated_user.hashed_password)
+    assert not verify_password(original_password, updated_user.hashed_password)
+
+
+def test_update_user_partial_no_password(db_session: Session) -> None:
+    """
+    Testa a atualização parcial de um usuário (ex: apenas nome), sem alterar a senha.
+    """
+    email = "partial_update@example.com"
+    password = "passwordUnchanged"
+    user_to_update = crud_user.create_user(db_session, UserCreate(
+        email=email, password=password, full_name="Initial Name"
+    ))
+
+    new_full_name = "Partially Updated Name"
+    update_data_dict: Dict[str, Any] = {
+        "full_name": new_full_name, 
+        "is_active": False        
+    } 
+
+    updated_user = crud_user.update_user(db=db_session, db_user=user_to_update, user_in=update_data_dict)
+
+    assert updated_user is not None
+    assert updated_user.email == email 
+    assert updated_user.full_name == new_full_name
+    assert updated_user.is_active is False
+    assert verify_password(password, updated_user.hashed_password)
+
+
+def test_update_user_only_password(db_session: Session) -> None:
+    """Testa a atualização apenas da senha de um usuário."""
+    email = "password_only_update@example.com"
+    original_password = "originalPassword"
+    user_to_update = crud_user.create_user(db_session, UserCreate(
+        email=email, password=original_password, full_name="Password User"
+    ))
+
+    new_password = "newSecurePasswordOnly"
+    update_data = UserUpdate(password=new_password)
+
+    updated_user = crud_user.update_user(db=db_session, db_user=user_to_update, user_in=update_data)
+
+    assert updated_user is not None
+    assert updated_user.email == email
+    assert verify_password(new_password, updated_user.hashed_password)
+    assert not verify_password(original_password, updated_user.hashed_password)
+
+
+def test_update_user_with_none_values(db_session: Session) -> None:
+    """
+    Testa que campos não enviados (que são None no Pydantic model se não definidos)
+    não sobrescrevem valores existentes para None na função de update.
+    A lógica atual do crud.update_user é:
+    `if hasattr(db_user, field) and value is not None: setattr(db_user, field, value)`
+    Então, se passarmos `None` explicitamente para um campo que pode ser `None` no UserUpdate
+    (como `full_name`), ele não deveria ser atualizado para `None`.
+    Para "limpar" um campo (setar para None), precisaríamos de lógica adicional
+    ou passar um valor específico como uma string vazia.
+    Este teste verifica que campos 'não preenchidos' no update não mudam o valor do DB.
+    """
+    email = "none_values_update@example.com"
+    initial_full_name = "Initial Full Name"
+    user_to_update = crud_user.create_user(db_session, UserCreate(
+        email=email, password="password", full_name=initial_full_name
+    ))
+
+    update_data_schema = UserUpdate() 
+    updated_user = crud_user.update_user(db=db_session, db_user=user_to_update, user_in=update_data_schema)
+
+    assert updated_user.full_name == initial_full_name, "full_name não deveria mudar para None se não enviado."
+    assert updated_user.email == email, "email não deveria mudar para None se não enviado."
+
+    update_data_dict = {"full_name": None}
+    updated_user_dict = crud_user.update_user(db=db_session, db_user=user_to_update, user_in=update_data_dict)
+    assert updated_user_dict.full_name == initial_full_name, \
+        "full_name não deveria ser setado para None explicitamente devido à condição 'value is not None'."
+
+
+def test_delete_user(db_session: Session) -> None:
+    """
+    Testa a exclusão de um usuário do banco de dados.
+    """
+    email_to_delete = "delete_me@example.com"
+    user_to_delete_in_create = UserCreate(email=email_to_delete, password="password")
+    user_to_delete_model = crud_user.create_user(db=db_session, user=user_to_delete_in_create) 
+
+    assert user_to_delete_model.id is not None
+    user_id_deleted = user_to_delete_model.id
+
+    deleted_user_obj = crud_user.delete_user(db=db_session, db_user=user_to_delete_model)
+
+    assert deleted_user_obj.id == user_id_deleted 
+
+    user_after_delete = crud_user.get_user(db=db_session, user_id=user_id_deleted)
+    assert user_after_delete is None, "Usuário não deveria ser encontrado no banco após a exclusão."
+
+    user_by_email_after_delete = crud_user.get_user_by_email(db=db_session, email=email_to_delete)
+    assert user_by_email_after_delete is None, "Usuário não deveria ser encontrado por e-mail após a exclusão."
+
+================================================================================
+Capítulo 23: tests/schemas/test_token_schema.py
+================================================================================
+
+# tests/schemas/test_token_schema.py
+
+# =======================================================================================================
+# --- Importações ---                                                                               #####
+# =======================================================================================================
+
+from pydantic import ValidationError
+import pytest
+
+from app.schemas.token import TokenData # Ou de onde você importa TokenData nos seus testes
+
+# =======================================================================================================
+# --- Teste ---                                                                                     #####
+# =======================================================================================================
+
+def test_tokendata_email_validation():
+    """Testa se TokenData levanta ValidationError para um email inválido."""
+    with pytest.raises(ValidationError):
+        TokenData(email="not-an-email") # Deve levantar ValidationError
+
+    # Teste com um email válido para garantir que funciona
+    try:
+        valid_td = TokenData(email="valid@example.com")
+        assert valid_td.email == "valid@example.com"
+    except ValidationError:
+        pytest.fail("TokenData não deveria levantar ValidationError para um email válido.")
+
+    # Teste com None (que é permitido pelo schema Optional[str])
+    try:
+        none_td = TokenData(email=None)
+        assert none_td.email is None
+    except ValidationError:
+        pytest.fail("TokenData não deveria levantar ValidationError para email=None.")
+

@@ -1,0 +1,62 @@
+version: '3.8'
+
+services:
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: crud_fastapi_app
+    command: uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
+    volumes:
+      - ./backend:/usr/src/app
+    ports:
+      - "8000:8000"
+    environment:
+      - PYTHONUNBUFFERED=1
+      - DATABASE_URL=postgresql://crud_user:crud_password@db:5432/crud_db
+      - SECRET_KEY=03RRXfZGfmUTPXjZlctCpvvP1Dw1VBeZ
+    depends_on:
+      - db
+    networks:
+      - crud_network
+
+  db:
+    image: postgres:15-alpine
+    container_name: crud_postgres_db
+    volumes:
+      - postgres_data:/var/lib/postgresql/data/
+    environment:
+      - POSTGRES_USER=crud_user
+      - POSTGRES_PASSWORD=crud_password
+      - POSTGRES_DB=crud_db
+    ports:
+      - "5432:5432"
+    networks:
+      - crud_network
+    restart: unless-stopped
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: crud_vue_app
+    ports:
+      - "5173:5173"
+    volumes:
+      - ./frontend:/app
+      - /app/node_modules
+    environment:
+      - NODE_ENV=development
+      - VITE_API_BASE_URL=http://backend:8000/api/v1
+    command: npm run dev
+    depends_on:
+      - backend
+    networks:
+      - crud_network
+
+volumes:
+  postgres_data:
+
+networks:
+  crud_network:
+    driver: bridge
