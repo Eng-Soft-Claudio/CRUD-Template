@@ -9,7 +9,8 @@ from typing import Dict
 from fastapi.middleware.cors import CORSMiddleware 
 
 from app.core.config import settings
-from app.api.v1.endpoints import auth as auth_router 
+from app.api.v1.endpoints import auth as auth_router
+from app.api.v1.endpoints import users_admin as users_admin_router
 
 
 # =======================================================================================================
@@ -47,6 +48,7 @@ app.add_middleware(
 # =======================================================================================================
 
 app.include_router(auth_router.router, prefix=settings.API_V1_STR + "/auth", tags=["Authentication & Users"])
+app.include_router(users_admin_router.router, prefix=settings.API_V1_STR + "/users", tags=["Admin - Users Management"]) 
 
 # =======================================================================================================
 # --- Endpoints ---                                                                                 #####

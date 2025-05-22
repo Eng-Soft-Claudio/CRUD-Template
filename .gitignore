@@ -11,6 +11,9 @@ env/
 dist/
 build/
 *.log
+.pytest_cache
+htmlcov/
+.venv
 
 # VSCode
 .vscode/

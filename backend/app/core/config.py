@@ -35,6 +35,10 @@ class Settings(BaseSettings):
     ACCESS_TOKEN_EXPIRE_MINUTES: int = 30
     REFRESH_TOKEN_EXPIRE_DAYS: int = 7  
 
+    # Configurações de tipo
+    FIRST_SUPERUSER_EMAIL: EmailStr = "admin@example.com"
+    FIRST_SUPERUSER_PASSWORD: str = "changethis"
+
     # Configurações para Token de Recuperação de Senha
     PASSWORD_RESET_TOKEN_EXPIRE_HOURS: int = 1
     SERVER_HOST: str = "http://localhost:8000"
