@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { ref } from 'vue';
 import { useAuthStore } from '@/stores/auth';
-import type { UserPasswordChange } from '@/schemas/user'; 
+import type { UserPasswordChange } from '@/types/user'; 
 import router from '@/router';
 
 

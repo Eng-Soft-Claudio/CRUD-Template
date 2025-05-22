@@ -20,7 +20,6 @@ const handleLogout = () => {
   authStore.logout();
 };
 </script>
-
 <template>
   <div class="app-layout">
     <header class="app-header">
@@ -71,6 +70,7 @@ const handleLogout = () => {
   --primary-hover-color: #0056b3;
   --text-color-primary: #212529;
   --text-color-secondary: #6c757d;
+  --text-on-dark-bg: #ffffff;
   --bg-light: #f8f9fa;
   --bg-dark: #343a40;
   --border-color: #dee2e6;
@@ -200,6 +200,10 @@ const handleLogout = () => {
 }
 
 .app-footer {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  width: 100%;
   text-align: center;
   padding: var(--padding-lg) var(--mobile-padding);
   background-color: var(--bg-dark);
