@@ -16,7 +16,7 @@ const handleLogin = async () => {
   }
   await authStore.login({ username: email.value, password: password.value });
   if (authStore.isAuthenticated) {
-    router.push('/'); // Redireciona para a home/dashboard após login
+    router.push('/'); 
   }
 };
 </script>
@@ -38,6 +38,9 @@ const handleLogin = async () => {
       </button>
       <p v-if="authStore.error" class="error-message">{{ authStore.error }}</p>
     </form>
+    <p>
+      <router-link to="/forgot-password">Esqueci minha senha</router-link> 
+    </p>
     <p>
       Não tem uma conta? <router-link to="/register">Registre-se</router-link>
     </p>

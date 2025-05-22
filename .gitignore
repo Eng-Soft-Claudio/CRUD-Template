@@ -41,3 +41,6 @@ yarn.lock
 *.pem
 *.env.local
 *.local
+
+# Particular
+descriptive/
