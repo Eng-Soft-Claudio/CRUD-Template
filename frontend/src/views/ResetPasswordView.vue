@@ -1,76 +1,81 @@
 <script setup lang="ts">
 import { ref, onMounted, watch } from 'vue';
-import { useRoute, useRouter } from 'vue-router';
+import { useRoute } from 'vue-router';
+import type { LocationQueryValue } from 'vue-router';
 import { useAuthStore } from '@/stores/auth';
 import type { PasswordResetForm } from '@/types/user';
+import { Form, Field, ErrorMessage } from 'vee-validate';
+import * as yup from 'yup';
 
 const route = useRoute();
-const router = useRouter();
 const authStore = useAuthStore();
 
-const tokenFromQuery = ref('');
-const inputToken = ref(''); // v-model para o campo de input do token
-const newPassword = ref('');
-const newPasswordConfirm = ref('');
+const validationSchema = yup.object({
+  inputToken: yup.string().required('O token de recuperação é obrigatório'),
+  newPassword: yup.string()
+    .required('A nova senha é obrigatória')
+    .min(8, 'A nova senha deve ter pelo menos 8 caracteres'),
+  newPasswordConfirm: yup.string()
+    .required('A confirmação da nova senha é obrigatória')
+    .oneOf([yup.ref('newPassword')], 'As novas senhas não coincidem'),
+});
 
-const successMessage = ref<string | null>(null);
-const generalError = ref<string | null>(null);
-const showForm = ref(true); // Sempre mostrar o formulário nesta view
+const formValues = ref({
+  inputToken: '',
+  newPassword: '',
+  newPasswordConfirm: '',
+});
 
-const clearMessages = () => {
-  authStore.setError(null);
-  successMessage.value = null;
-  generalError.value = null;
+const updateTokenFromQuery = (queryParam: LocationQueryValue | LocationQueryValue[] | null | undefined) => {
+  let extractedString: string | null = null;
+
+  if (Array.isArray(queryParam)) {
+    extractedString = queryParam[0];
+  } else if (queryParam !== undefined) { 
+    extractedString = queryParam; 
+  }
+
+  if (typeof extractedString === 'string' && extractedString) {
+    formValues.value.inputToken = extractedString;
+  } else {
+    formValues.value.inputToken = ''; 
+  }
 };
 
 onMounted(() => {
-  const queryToken = route.query.token;
-  if (typeof queryToken === 'string' && queryToken) {
-    tokenFromQuery.value = queryToken; // Guarda o token da URL se vier
-    inputToken.value = queryToken;    // Preenche o campo do formulário com ele
-  }
-  // O formulário será exibido independentemente para o usuário colar, se necessário
+  updateTokenFromQuery(route.query.token);
 });
 
-// Atualiza o token do input se a query da rota mudar
-watch(() => route.query.token, (newTokenValue) => {
-    clearMessages();
-    const newTokenString = Array.isArray(newTokenValue) ? newTokenValue[0] : newTokenValue; // Lida com array de query params
-    if (typeof newTokenString === 'string' && newTokenString) {
-        tokenFromQuery.value = newTokenString;
-        inputToken.value = newTokenString;
-    }
+watch(() => route.query.token, (newToken) => {
+  authStore.setError(null);
+  updateTokenFromQuery(newToken);
 });
 
-
-const handleResetPassword = async () => {
-  clearMessages();
-
-  if (!inputToken.value) {
-    generalError.value = 'O token de redefinição é obrigatório.';
-    return;
-  }
-  if (!newPassword.value || !newPasswordConfirm.value) {
-    generalError.value = 'Nova senha e confirmação são obrigatórias.';
-    return;
-  }
-  if (newPassword.value !== newPasswordConfirm.value) {
-    generalError.value = 'As senhas não coincidem.';
-    return;
-  }
+const handleResetPassword = async (values: Record<string, any>, { setErrors }: any) => {
+  authStore.setError(null);
 
   const resetData: PasswordResetForm = {
-    token: inputToken.value,
-    new_password: newPassword.value,
-    new_password_confirm: newPasswordConfirm.value,
+    token: values.inputToken,
+    new_password: values.newPassword,
+    new_password_confirm: values.newPasswordConfirm,
   };
 
   try {
     await authStore.resetPassword(resetData);
-    // A store já lida com o alert e redirecionamento para login.
   } catch (error: any) {
-     if (!authStore.error) {
-        generalError.value = error.message || 'Ocorreu um erro ao redefinir a senha. Verifique o token e os dados.';
+    if (authStore.error) {
+      setErrors({ apiError: authStore.error });
+    } else if (error.response?.data?.detail) {
+      const detail = error.response.data.detail;
+      if (typeof detail === 'string') {
+        setErrors({ apiError: detail });
+      } else if (Array.isArray(detail) && detail[0]?.msg) {
+        setErrors({ apiError: detail[0].msg });
+      } else {
+        setErrors({ apiError: 'Falha ao redefinir a senha.' });
+      }
+    } else {
+      setErrors({ apiError: 'Ocorreu um erro desconhecido ao tentar redefinir a senha.' });
     }
     console.error('Erro ao redefinir senha no componente:', error);
   }
@@ -80,100 +85,158 @@ const handleResetPassword = async () => {
 <template>
   <div class="reset-password-container">
     <h2>Redefinir Senha</h2>
+    <Form :validation-schema="validationSchema" :initial-values="formValues" @submit="handleResetPassword"
+      v-slot="{ errors, isSubmitting, meta, values }">
+      <div class="form-group">
+        <label for="inputToken-reset">Token de Recuperação:</label>
+        <Field name="inputToken" type="text" id="inputToken-reset" class="form-control"
+          :class="{ 'is-invalid': errors.inputToken }" placeholder="Cole o token aqui" />
+        <ErrorMessage name="inputToken" class="invalid-feedback" />
+        <small v-if="!route.query.token && !values.inputToken" class="form-text">
+          Cole o token dos logs do backend ou o token recebido por email.
+        </small>
+      </div>
 
-    <p v-if="generalError && !authStore.error" class="error-message">{{ generalError }}</p>
-    <p v-if="authStore.error" class="error-message">{{ authStore.error }}</p>
-    <p v-if="successMessage" class="success-message">{{ successMessage }}</p>
+      <div class="form-group">
+        <label for="newPassword-reset">Nova Senha:</label>
+        <Field name="newPassword" type="password" id="newPassword-reset" class="form-control"
+          :class="{ 'is-invalid': errors.newPassword }" />
+        <ErrorMessage name="newPassword" class="invalid-feedback" />
+      </div>
 
-    <!-- O formulário sempre é exibido; a validação se o token existe é feita no submit -->
-    <form @submit.prevent="handleResetPassword">
-      <div>
-        <label for="inputToken">Token de Recuperação:</label>
-        <input type="text" id="inputToken" v-model="inputToken" required placeholder="Cole o token dos logs do backend aqui" />
-         <small>
-           Se o token veio na URL, ele será preenchido. Caso contrário, cole o token dos logs do backend aqui.
-         </small>
+      <div class="form-group">
+        <label for="newPasswordConfirm-reset">Confirmar Nova Senha:</label>
+        <Field name="newPasswordConfirm" type="password" id="newPasswordConfirm-reset" class="form-control"
+          :class="{ 'is-invalid': errors.newPasswordConfirm }" />
+        <ErrorMessage name="newPasswordConfirm" class="invalid-feedback" />
       </div>
-      <div>
-        <label for="newPassword">Nova Senha:</label>
-        <input type="password" id="newPassword" v-model="newPassword" required />
+
+      <div v-if="errors.apiError" class="api-error-message">
+        {{ errors.apiError }}
       </div>
-      <div>
-        <label for="newPasswordConfirm">Confirmar Nova Senha:</label>
-        <input type="password" id="newPasswordConfirm" v-model="newPasswordConfirm" required />
+      <div v-else-if="authStore.error && !meta.dirty && meta.touched && !errors.apiError" class="api-error-message">
+        {{ authStore.error }}
       </div>
-      <button type="submit" :disabled="authStore.loading || !inputToken">
-        {{ authStore.loading ? 'Redefinindo...' : 'Redefinir Senha' }}
+
+      <button type="submit" :disabled="isSubmitting || authStore.loading || !meta.valid && meta.touched"
+        class="btn-submit">
+        {{ (isSubmitting || authStore.loading) ? 'Redefinindo...' : 'Redefinir Senha' }}
       </button>
-    </form>
+    </Form>
+    <p v-if="!authStore.isAuthenticated" class="login-link">
+      Lembrou sua senha? <router-link to="/login">Faça login</router-link>
+    </p>
   </div>
 </template>
 
 <style scoped>
 .reset-password-container {
-  max-width: 450px;
+  max-width: 480px;
   margin: 50px auto;
-  padding: 20px;
-  border: 1px solid #ccc;
-  border-radius: 8px;
-  background-color: #f9f9f9;
-  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+  padding: 30px;
+  background-color: #f9fafb;
+  border-radius: 12px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
 }
+
 .reset-password-container h2 {
   text-align: center;
+  margin-bottom: 25px;
+  font-size: 1.8em;
+  color: #1f2937;
+  font-weight: 600;
+}
+
+.form-group {
   margin-bottom: 20px;
 }
-.reset-password-container form div { 
-  margin-bottom: 15px;
-}
-.reset-password-container label {
+
+.form-group label {
   display: block;
-  margin-bottom: 5px;
-  font-weight: bold;
+  margin-bottom: 8px;
+  font-weight: 500;
+  color: #374151;
 }
-.reset-password-container input {
+
+.form-control {
   width: 100%;
-  padding: 10px;
-  box-sizing: border-box;
-  border: 1px solid #ddd;
-  border-radius: 4px;
+  padding: 10px 12px;
+  border: 1px solid #d1d5db;
+  border-radius: 6px;
+  font-size: 1em;
+  transition: border-color 0.2s, box-shadow 0.2s;
 }
-.reset-password-container input:disabled {
-  background-color: #eee;
+
+.form-control:focus {
+  border-color: var(--primary-color, #3b82f6);
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.25);
+  outline: none;
 }
-.error-message, .success-message, .info-message {
-  margin-top: 15px; /* Aumentei um pouco a margem */
+
+.form-control.is-invalid {
+  border-color: var(--danger-color, #ef4444);
+}
+
+.invalid-feedback {
+  display: block;
+  color: var(--danger-color, #ef4444);
+  font-size: 0.875em;
+  margin-top: 6px;
+}
+
+.form-text {
+  display: block;
+  font-size: 0.8em;
+  color: #6b7280;
+  margin-top: 6px;
+}
+
+.api-error-message {
+  color: var(--danger-color, #ef4444);
+  background-color: #fee2e2;
+  border: 1px solid #fca5a5;
   padding: 10px;
-  border-radius: 4px;
+  border-radius: 6px;
+  margin-bottom: 20px;
+  text-align: center;
   font-size: 0.9em;
-  border-width: 1px;
-  border-style: solid;
 }
-.error-message { color: #D8000C; background-color: #FFD2D2; border-color: #FFB8B8; }
-.success-message { color: green; background-color: #d4edda; border-color: #c3e6cb;}
-.info-message { color: #004085; background-color: #cce5ff; border-color: #b8daff;}
-small {
-    font-size: 0.8em;
-    color: #666;
-    display: block;
-    margin-top: 5px;
-}
-button {
+
+.btn-submit {
   width: 100%;
-  padding: 12px 15px;
-  background-color: #007bff;
+  background-color: var(--primary-color, #2563eb);
   color: white;
+  padding: 12px;
   border: none;
-  border-radius: 4px;
+  border-radius: 6px;
+  font-weight: 600;
+  font-size: 1em;
   cursor: pointer;
   transition: background-color 0.2s;
-  font-size: 1em;
 }
-button:disabled {
-  background-color: #ccc;
+
+.btn-submit:hover:not(:disabled) {
+  background-color: var(--primary-hover-color, #1e40af);
+}
+
+.btn-submit:disabled {
+  background-color: #9ca3af;
   cursor: not-allowed;
 }
-button:not(:disabled):hover {
-  background-color: #0056b3;
+
+.login-link {
+  text-align: center;
+  margin-top: 25px;
+  font-size: 0.9em;
+}
+
+.login-link a {
+  color: var(--primary-color, #10b981);
+  text-decoration: none;
+  font-weight: 500;
+}
+
+.login-link a:hover {
+  text-decoration: underline;
 }
 </style>

@@ -10,6 +10,9 @@ import type {
 } from '@/types/user'
 import type { Token } from '@/types/token'
 import router from '@/router'
+import { useToast } from 'vue-toastification'
+
+const toast = useToast()
 
 interface AuthState {
   user: UserRead | null
@@ -36,6 +39,9 @@ export const useAuthStore = defineStore('auth', {
     },
     setError(error: string | null) {
       this.error = error
+      if (error) {
+        toast.error(error); 
+      }
     },
     setToken(token: string | null) {
       this.token = token
@@ -73,13 +79,11 @@ export const useAuthStore = defineStore('auth', {
         this.setToken(tokenData.access_token)
         await this.fetchCurrentUser()
         router.push('/')
+        toast.success('Login bem-sucedido!')
       } catch (err: any) {
         console.error('Login error:', err)
-        if (err.response && err.response.data && err.response.data.detail) {
-          this.setError(err.response.data.detail)
-        } else {
-          this.setError('Falha ao fazer login. Verifique suas credenciais.')
-        }
+        const errorMessage = err.response?.data?.detail || 'Falha ao fazer login. Verifique suas credenciais.'
+        this.setError(errorMessage) 
         this.setToken(null)
         this.setUser(null)
       } finally {
@@ -93,15 +97,12 @@ export const useAuthStore = defineStore('auth', {
       try {
         const response = await apiClient.post<UserRead>('/auth/register', userData)
         router.push('/login')
-        alert('Registro bem-sucedido! Por favor, faça login.')
+        toast.success('Registro bem-sucedido! Por favor, faça login.')
         return response.data
       } catch (err: any) {
         console.error('Register error:', err)
-        if (err.response && err.response.data && err.response.data.detail) {
-          this.setError(err.response.data.detail)
-        } else {
-          this.setError('Falha ao registrar. Tente novamente.')
-        }
+        const errorMessage = err.response?.data?.detail || 'Falha ao registrar. Tente novamente.'
+        this.setError(errorMessage)
         throw err
       } finally {
         this.setLoading(false)
@@ -136,6 +137,7 @@ export const useAuthStore = defineStore('auth', {
       localStorage.removeItem('token')
       localStorage.removeItem('user')
       router.push('/login')
+      toast.info('Você foi desconectado.')
     },
 
     async tryAutoLogin() {
@@ -149,25 +151,22 @@ export const useAuthStore = defineStore('auth', {
       this.setError(null)
       try {
         await apiClient.put('/auth/me/password', passwordData)
+        toast.success('Senha alterada com sucesso!')
       } catch (err: any) {
         console.error('Change password error:', err)
-        if (err.response && err.response.data && err.response.data.detail) {
+        let errorMessage = 'Falha ao alterar a senha. Ocorreu um erro desconhecido.'
+        if (err.response?.data?.detail) {
           if (typeof err.response.data.detail === 'string') {
-            this.setError(err.response.data.detail)
-          } else if (
-            Array.isArray(err.response.data.detail) &&
-            err.response.data.detail[0] &&
-            err.response.data.detail[0].msg
-          ) {
-            this.setError(err.response.data.detail[0].msg)
+            errorMessage = err.response.data.detail
+          } else if (Array.isArray(err.response.data.detail) && err.response.data.detail[0]?.msg) {
+            errorMessage = err.response.data.detail[0].msg
           } else {
-            this.setError('Falha ao alterar a senha. Verifique os dados fornecidos.')
+            errorMessage = 'Falha ao alterar a senha. Verifique os dados fornecidos.'
           }
         } else if (err.message) {
-          this.setError(err.message)
-        } else {
-          this.setError('Falha ao alterar a senha. Ocorreu um erro desconhecido.')
+          errorMessage = err.message
         }
+        this.setError(errorMessage)
         throw err
       } finally {
         this.setLoading(false)
@@ -183,14 +182,12 @@ export const useAuthStore = defineStore('auth', {
           '/auth/password-recovery',
           recoveryData,
         )
+        toast.info(response.data.message + " Em DEV, verifique os logs do backend para o token.")
         return response.data.message
       } catch (err: any) {
         console.error('Password recovery request error:', err)
-        if (err.response && err.response.data && err.response.data.detail) {
-          this.setError(err.response.data.detail)
-        } else {
-          this.setError('Ocorreu um erro ao solicitar a recuperação de senha.')
-        }
+        const errorMessage = err.response?.data?.detail || 'Ocorreu um erro ao solicitar a recuperação de senha.'
+        this.setError(errorMessage)
         throw err
       } finally {
         this.setLoading(false)
@@ -203,24 +200,20 @@ export const useAuthStore = defineStore('auth', {
       try {
         await apiClient.post('/auth/reset-password', resetData)
         router.push('/login')
-        alert('Senha redefinida com sucesso! Por favor, faça login com sua nova senha.')
+        toast.success('Senha redefinida com sucesso! Por favor, faça login com sua nova senha.')
       } catch (err: any) {
         console.error('Reset password error:', err)
-        if (err.response && err.response.data && err.response.data.detail) {
+        let errorMessage = 'Falha ao redefinir a senha. Tente novamente ou solicite um novo link.'
+        if (err.response?.data?.detail) {
           if (typeof err.response.data.detail === 'string') {
-            this.setError(err.response.data.detail)
-          } else if (
-            Array.isArray(err.response.data.detail) &&
-            err.response.data.detail[0] &&
-            err.response.data.detail[0].msg
-          ) {
-            this.setError(err.response.data.detail[0].msg)
+            errorMessage = err.response.data.detail
+          } else if (Array.isArray(err.response.data.detail) && err.response.data.detail[0]?.msg) {
+            errorMessage = err.response.data.detail[0].msg
           } else {
-            this.setError('Falha ao redefinir a senha.')
+            errorMessage = 'Falha ao redefinir a senha.'
           }
-        } else {
-          this.setError('Falha ao redefinir a senha. Tente novamente ou solicite um novo link.')
         }
+        this.setError(errorMessage)
         throw err
       } finally {
         this.setLoading(false)
@@ -228,48 +221,46 @@ export const useAuthStore = defineStore('auth', {
     },
 
     async updateUserProfile(updateData: UserUpdate) {
-      this.setLoading(true);
-      this.setError(null);
+      this.setLoading(true)
+      this.setError(null)
       try {
-        const response = await apiClient.patch<UserRead>('/auth/me', updateData);
-        this.setUser(response.data);
-        return response.data; 
+        const response = await apiClient.patch<UserRead>('/auth/me', updateData)
+        this.setUser(response.data)
+        toast.success('Perfil atualizado com sucesso!')
+        return response.data
       } catch (err: any) {
-        console.error("Update profile error:", err);
-        if (err.response && err.response.data && err.response.data.detail) {
-            if (typeof err.response.data.detail === 'string') {
-                this.setError(err.response.data.detail);
-            } else if (Array.isArray(err.response.data.detail) && err.response.data.detail[0] && err.response.data.detail[0].msg) {
-                this.setError(err.response.data.detail[0].msg);
+        console.error("Update profile error:", err)
+        let errorMessage = 'Falha ao atualizar o perfil. Ocorreu um erro desconhecido.'
+        if (err.response?.data?.detail) {
+             if (typeof err.response.data.detail === 'string') {
+                errorMessage = err.response.data.detail
+            } else if (Array.isArray(err.response.data.detail) && err.response.data.detail[0]?.msg) {
+                errorMessage = err.response.data.detail[0].msg
             } else {
-                this.setError('Falha ao atualizar o perfil.');
+                errorMessage = 'Falha ao atualizar o perfil.'
             }
-        } else {
-          this.setError('Falha ao atualizar o perfil. Ocorreu um erro desconhecido.');
         }
-        throw err;
+        this.setError(errorMessage)
+        throw err
       } finally {
-        this.setLoading(false);
+        this.setLoading(false)
       }
     },
 
     async deleteUserAccount() {
-      this.setLoading(true);
-      this.setError(null);
+      this.setLoading(true)
+      this.setError(null)
       try {
-        await apiClient.delete('/auth/me');
-        this.logout();
-        alert('Sua conta foi deletada com sucesso.'); 
+        await apiClient.delete('/auth/me')
+        this.logout() 
+        toast.success('Sua conta foi deletada com sucesso.')
       } catch (err: any) {
-        console.error("Delete account error:", err);
-        if (err.response && err.response.data && err.response.data.detail) {
-            this.setError(err.response.data.detail);
-        } else {
-          this.setError('Falha ao deletar a conta. Tente novamente.');
-        }
-        throw err; 
+        console.error("Delete account error:", err)
+        const errorMessage = err.response?.data?.detail || 'Falha ao deletar a conta. Tente novamente.'
+        this.setError(errorMessage)
+        throw err
       } finally {
-        this.setLoading(false);
+        this.setLoading(false)
       }
     },
   },

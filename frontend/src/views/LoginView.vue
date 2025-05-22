@@ -1,22 +1,40 @@
 <script setup lang="ts">
-import { ref } from 'vue';
 import { useAuthStore } from '@/stores/auth';
 import { useRouter } from 'vue-router';
+import { Form, Field, ErrorMessage } from 'vee-validate';
+import * as yup from 'yup';
 
 const authStore = useAuthStore();
 const router = useRouter();
 
-const email = ref('');
-const password = ref('');
+const validationSchema = yup.object({
+  email: yup.string().required('O email é obrigatório').email('Formato de email inválido'),
+  password: yup.string().required('A senha é obrigatória'),
+});
 
-const handleLogin = async () => {
-  if (!email.value || !password.value) {
-    authStore.setError('Email e senha são obrigatórios.');
-    return;
-  }
-  await authStore.login({ username: email.value, password: password.value });
-  if (authStore.isAuthenticated) {
-    router.push('/'); 
+const initialValues = {
+  email: '',
+  password: '',
+};
+
+const handleLogin = async (values: Record<string, any>, { setErrors }: any) => {
+  authStore.setError(null);
+  try {
+    await authStore.login({ username: values.email, password: values.password });
+    if (authStore.isAuthenticated) {
+      router.push('/');
+    } else if (authStore.error) {
+      setErrors({ apiError: authStore.error });
+    }
+  } catch (error: any) {
+    if (authStore.error) {
+        setErrors({ apiError: authStore.error });
+    } else if (error.message){
+        setErrors({ apiError: error.message });
+    } else {
+        setErrors({ apiError: 'Ocorreu um erro inesperado.' });
+    }
+    console.error('Falha no login do componente:', error);
   }
 };
 </script>
@@ -24,24 +42,34 @@ const handleLogin = async () => {
 <template>
   <div class="login-container">
     <h2>Login</h2>
-    <form @submit.prevent="handleLogin">
-      <div>
-        <label for="email">Email:</label>
-        <input type="email" id="email" v-model="email" required />
+    <Form :validation-schema="validationSchema" :initial-values="initialValues" @submit="handleLogin" v-slot="{ errors, isSubmitting }">
+      <div class="form-group">
+        <label for="email-login">Email:</label>
+        <Field name="email" type="email" id="email-login" class="form-control" :class="{'is-invalid': errors.email }" />
+        <ErrorMessage name="email" class="invalid-feedback" />
       </div>
-      <div>
-        <label for="password">Senha:</label>
-        <input type="password" id="password" v-model="password" required />
+
+      <div class="form-group">
+        <label for="password-login">Senha:</label>
+        <Field name="password" type="password" id="password-login" class="form-control" :class="{'is-invalid': errors.password }" />
+        <ErrorMessage name="password" class="invalid-feedback" />
       </div>
-      <button type="submit" :disabled="authStore.loading">
-        {{ authStore.loading ? 'Entrando...' : 'Entrar' }}
+
+      <div v-if="errors.apiError" class="api-error-message">
+        {{ errors.apiError }}
+      </div>
+      <div v-else-if="authStore.error && !errors.apiError" class="api-error-message">
+         {{ authStore.error }}
+      </div>
+
+      <button type="submit" :disabled="isSubmitting || authStore.loading" class="btn-submit">
+        {{ (isSubmitting || authStore.loading) ? 'Entrando...' : 'Entrar' }}
       </button>
-      <p v-if="authStore.error" class="error-message">{{ authStore.error }}</p>
-    </form>
-    <p class="forgot-password">
-      <router-link to="/forgot-password">Esqueci minha senha</router-link> 
+    </Form>
+    <p class="forgot-password-link">
+      <router-link to="/forgot-password">Esqueci minha senha</router-link>
     </p>
-    <p class="register">
+    <p class="register-link">
       Não tem uma conta? <router-link to="/register">Registre-se</router-link>
     </p>
   </div>
@@ -49,93 +77,95 @@ const handleLogin = async () => {
 
 <style scoped>
 .login-container {
-  max-width: 400px;
+  max-width: 420px;
   margin: 60px auto;
-  padding: 30px;
-  background-color: #f1f2f3;
-  border: 1px solid #e5e7eb;
+  padding: 35px;
+  background-color: #f9fafb;
   border-radius: 12px;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
-  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+  box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
 }
-
 .login-container h2 {
   text-align: center;
-  margin-bottom: 24px;
-  font-size: 24px;
-  color: #111827;
-}
-
-.login-container div {
-  margin-bottom: 20px;
-}
-
-.login-container label {
-  display: block;
-  margin-bottom: 6px;
+  margin-bottom: 30px;
+  font-size: 2em;
+  color: #1f2937;
   font-weight: 600;
+}
+.form-group {
+  margin-bottom: 22px;
+}
+.form-group label {
+  display: block;
+  margin-bottom: 8px;
+  font-weight: 500;
   color: #374151;
 }
-
-.login-container input {
+.form-control {
   width: 100%;
-  padding: 10px 12px;
+  padding: 12px 15px;
   border: 1px solid #d1d5db;
   border-radius: 8px;
-  font-size: 14px;
-  background-color: #fefce8;
+  font-size: 1em;
+  background-color: #ffffff;
   transition: border-color 0.2s, box-shadow 0.2s;
 }
-
-.login-container input:focus {
-  border-color: #3b82f6;
-  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.3);
+.form-control:focus {
+  border-color: var(--primary-color, #3b82f6);
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.25);
   outline: none;
 }
-.forgot-password{
-  text-align: center;
-  padding-top: 8%;
+.form-control.is-invalid {
+  border-color: var(--danger-color, #ef4444);
 }
-.register{
-  text-align: center;
-  padding-top: 8%;
+.invalid-feedback {
+  display: block;
+  color: var(--danger-color, #ef4444);
+  font-size: 0.875em;
+  margin-top: 6px;
 }
-
-button[type="submit"] {
-  width: 100%;
-  background-color: #2563eb;
-  color: white;
+.api-error-message {
+  color: var(--danger-color, #ef4444);
+  background-color: #fee2e2;
+  border: 1px solid #fca5a5;
   padding: 12px;
+  border-radius: 8px;
+  margin-bottom: 22px;
+  text-align: center;
+  font-size: 0.9em;
+}
+.btn-submit {
+  width: 100%;
+  background-color: var(--primary-color, #2563eb);
+  color: white;
+  padding: 14px;
   border: none;
   border-radius: 8px;
   font-weight: 600;
+  font-size: 1.05em;
   cursor: pointer;
   transition: background-color 0.2s;
 }
-
-button[type="submit"]:hover {
-  background-color: #1e40af;
+.btn-submit:hover:not(:disabled) {
+  background-color: var(--primary-hover-color, #1e40af);
 }
-
-button[type="submit"]:disabled {
+.btn-submit:disabled {
   background-color: #9ca3af;
   cursor: not-allowed;
 }
-
-.error-message {
-  color: #dc2626;
-  font-size: 14px;
-  margin-top: 12px;
+.forgot-password-link,
+.register-link {
   text-align: center;
+  margin-top: 22px;
+  font-size: 0.9em;
 }
-
-a {
-  color: #10b981;
+.forgot-password-link a,
+.register-link a {
+  color: var(--primary-color, #10b981);
   text-decoration: none;
   font-weight: 500;
 }
-
-a:hover {
+.forgot-password-link a:hover,
+.register-link a:hover {
   text-decoration: underline;
 }
 </style>

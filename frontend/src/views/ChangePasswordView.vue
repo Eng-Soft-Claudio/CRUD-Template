@@ -1,54 +1,54 @@
 <script setup lang="ts">
-import { ref } from 'vue';
 import { useAuthStore } from '@/stores/auth';
-import type { UserPasswordChange } from '@/types/user'; 
-import router from '@/router';
-
-
+import type { UserPasswordChange } from '@/types/user';
+import { Form, Field, ErrorMessage } from 'vee-validate';
+import * as yup from 'yup';
 
 const authStore = useAuthStore();
 
-const currentPassword = ref('');
-const newPassword = ref('');
-const newPasswordConfirm = ref('');
+const validationSchema = yup.object({
+  currentPassword: yup.string().required('A senha atual é obrigatória'),
+  newPassword: yup.string()
+    .required('A nova senha é obrigatória')
+    .min(8, 'A nova senha deve ter pelo menos 8 caracteres')
+    .notOneOf([yup.ref('currentPassword')], 'A nova senha não pode ser igual à senha atual'),
+  newPasswordConfirm: yup.string()
+    .required('A confirmação da nova senha é obrigatória')
+    .oneOf([yup.ref('newPassword')], 'As novas senhas não coincidem'),
+});
 
-const successMessage = ref<string | null>(null);
-const generalError = ref<string | null>(null); 
-
-const clearMessages = () => {
-  authStore.setError(null);
-  successMessage.value = null;
-  generalError.value = null;
+const initialValues = {
+  currentPassword: '',
+  newPassword: '',
+  newPasswordConfirm: '',
 };
 
-const handleChangePassword = async () => {
-  clearMessages();
+const handleChangePassword = async (values: Record<string, any>, { setErrors, resetForm }: any) => {
+  authStore.setError(null);
 
-  if (!currentPassword.value || !newPassword.value || !newPasswordConfirm.value) {
-    generalError.value = 'Todos os campos são obrigatórios.';
-    return;
-  }
-
-  if (newPassword.value !== newPasswordConfirm.value) {
-    generalError.value = 'A nova senha e a confirmação não coincidem.';
-    return;
-  }
-
-  const passwordData: UserPasswordChange = { 
-    current_password: currentPassword.value,
-    new_password: newPassword.value,
-    new_password_confirm: newPasswordConfirm.value,
+  const passwordData: UserPasswordChange = {
+    current_password: values.currentPassword,
+    new_password: values.newPassword,
+    new_password_confirm: values.newPasswordConfirm,
   };
 
   try {
-    await authStore.changePassword(passwordData); 
-    successMessage.value = 'Senha alterada com sucesso! Você pode precisar fazer login novamente se sua sessão foi invalidada (não é o caso padrão aqui).';
-    currentPassword.value = '';
-    newPassword.value = '';
-    newPasswordConfirm.value = '';
+    await authStore.changePassword(passwordData);
+    resetForm();
   } catch (error: any) {
-    if (!authStore.error) {
-        generalError.value = error.message || 'Ocorreu um erro ao tentar alterar a senha.';
+    if (authStore.error) {
+      setErrors({ apiError: authStore.error });
+    } else if (error.response?.data?.detail) {
+      const detail = error.response.data.detail;
+      if (typeof detail === 'string') {
+        setErrors({ apiError: detail });
+      } else if (Array.isArray(detail) && detail[0]?.msg) {
+        setErrors({ apiError: detail[0].msg });
+      } else {
+        setErrors({ apiError: 'Falha ao alterar a senha.' });
+      }
+    } else {
+      setErrors({ apiError: 'Ocorreu um erro desconhecido ao tentar alterar a senha.' });
     }
     console.error('Erro ao alterar senha no componente:', error);
   }
@@ -58,28 +58,36 @@ const handleChangePassword = async () => {
 <template>
   <div class="change-password-container">
     <h2>Alterar Senha</h2>
-    <form @submit.prevent="handleChangePassword">
-      <div>
-        <label for="currentPassword">Senha Atual:</label>
-        <input type="password" id="currentPassword" v-model="currentPassword" required />
-      </div>
-      <div>
-        <label for="newPassword">Nova Senha:</label>
-        <input type="password" id="newPassword" v-model="newPassword" required />
-      </div>
-      <div>
-        <label for="newPasswordConfirm">Confirmar Nova Senha:</label>
-        <input type="password" id="newPasswordConfirm" v-model="newPasswordConfirm" required />
+    <Form :validation-schema="validationSchema" :initial-values="initialValues" @submit="handleChangePassword" v-slot="{ errors, isSubmitting, meta }">
+      <div class="form-group">
+        <label for="currentPassword-change">Senha Atual:</label>
+        <Field name="currentPassword" type="password" id="currentPassword-change" class="form-control" :class="{'is-invalid': errors.currentPassword }" />
+        <ErrorMessage name="currentPassword" class="invalid-feedback" />
       </div>
 
-      <button type="submit" :disabled="authStore.loading">
-        {{ authStore.loading ? 'Alterando...' : 'Alterar Senha' }}
+      <div class="form-group">
+        <label for="newPassword-change">Nova Senha:</label>
+        <Field name="newPassword" type="password" id="newPassword-change" class="form-control" :class="{'is-invalid': errors.newPassword }" />
+        <ErrorMessage name="newPassword" class="invalid-feedback" />
+      </div>
+
+      <div class="form-group">
+        <label for="newPasswordConfirm-change">Confirmar Nova Senha:</label>
+        <Field name="newPasswordConfirm" type="password" id="newPasswordConfirm-change" class="form-control" :class="{'is-invalid': errors.newPasswordConfirm }" />
+        <ErrorMessage name="newPasswordConfirm" class="invalid-feedback" />
+      </div>
+
+      <div v-if="errors.apiError" class="api-error-message">
+        {{ errors.apiError }}
+      </div>
+      <div v-else-if="authStore.error && !meta.dirty && meta.touched" class="api-error-message">
+         {{ authStore.error }}
+      </div>
+
+      <button type="submit" :disabled="isSubmitting || authStore.loading || !meta.valid && meta.touched" class="btn-submit">
+        {{ (isSubmitting || authStore.loading) ? 'Alterando...' : 'Alterar Senha' }}
       </button>
-
-      <p v-if="successMessage" class="success-message">{{ successMessage }}</p>
-      <p v-if="authStore.error" class="error-message">{{ authStore.error }}</p>
-      <p v-if="generalError" class="error-message">{{ generalError }}</p>
-    </form>
+    </Form>
   </div>
 </template>
 
@@ -87,49 +95,76 @@ const handleChangePassword = async () => {
 .change-password-container {
   max-width: 450px;
   margin: 50px auto;
-  padding: 20px;
-  border: 1px solid #ccc;
-  border-radius: 8px;
-  background-color: #f9f9f9;
+  padding: 30px;
+  background-color: #f9fafb;
+  border-radius: 12px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
 }
-.change-password-container div {
-  margin-bottom: 15px;
+.change-password-container h2 {
+  text-align: center;
+  margin-bottom: 25px;
+  font-size: 1.8em;
+  color: #1f2937;
+  font-weight: 600;
 }
-.change-password-container label {
+.form-group {
+  margin-bottom: 20px;
+}
+.form-group label {
   display: block;
-  margin-bottom: 5px;
-  font-weight: bold;
+  margin-bottom: 8px;
+  font-weight: 500;
+  color: #374151;
 }
-.change-password-container input {
+.form-control {
   width: 100%;
-  padding: 10px;
-  box-sizing: border-box;
-  border: 1px solid #ddd;
-  border-radius: 4px;
+  padding: 10px 12px;
+  border: 1px solid #d1d5db;
+  border-radius: 6px;
+  font-size: 1em;
+  transition: border-color 0.2s, box-shadow 0.2s;
 }
-button {
-  padding: 10px 15px;
-  background-color: #007bff;
+.form-control:focus {
+  border-color: var(--primary-color, #3b82f6);
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.25);
+  outline: none;
+}
+.form-control.is-invalid {
+  border-color: var(--danger-color, #ef4444);
+}
+.invalid-feedback {
+  display: block;
+  color: var(--danger-color, #ef4444);
+  font-size: 0.875em;
+  margin-top: 6px;
+}
+.api-error-message {
+  color: var(--danger-color, #ef4444);
+  background-color: #fee2e2;
+  border: 1px solid #fca5a5;
+  padding: 10px;
+  border-radius: 6px;
+  margin-bottom: 20px;
+  text-align: center;
+  font-size: 0.9em;
+}
+.btn-submit {
+  width: 100%;
+  background-color: var(--primary-color, #2563eb);
   color: white;
+  padding: 12px;
   border: none;
-  border-radius: 4px;
+  border-radius: 6px;
+  font-weight: 600;
+  font-size: 1em;
   cursor: pointer;
   transition: background-color 0.2s;
 }
-button:disabled {
-  background-color: #ccc;
+.btn-submit:hover:not(:disabled) {
+  background-color: var(--primary-hover-color, #1e40af);
 }
-button:not(:disabled):hover {
-  background-color: #0056b3;
-}
-.error-message {
-  color: red;
-  margin-top: 10px;
-  font-size: 0.9em;
-}
-.success-message {
-  color: green;
-  margin-top: 10px;
-  font-size: 0.9em;
+.btn-submit:disabled {
+  background-color: #9ca3af;
+  cursor: not-allowed;
 }
 </style>

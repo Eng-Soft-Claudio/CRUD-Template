@@ -62,39 +62,18 @@ const handleLogout = () => {
 </template>
 
 <style scoped>
-:root {
-  --header-height: 60px;
-  --footer-height: 60px;
-  --content-max-width: 1140px;
-  --primary-color: #007bff;
-  --primary-hover-color: #0056b3;
-  --text-color-primary: #212529;
-  --text-color-secondary: #6c757d;
-  --text-on-dark-bg: #ffffff;
-  --bg-light: #f8f9fa;
-  --bg-dark: #343a40;
-  --border-color: #dee2e6;
-  --danger-color: #dc3545;
-  --link-hover-bg: #e9ecef;
-  --padding-sm: 8px;
-  --padding-md: 12px;
-  --padding-lg: 16px;
-  --mobile-padding: 15px;
-  --desktop-padding: 30px;
-}
 
 .app-layout {
   display: flex;
   flex-direction: column;
   min-height: 100vh;
-  background-color: #ffffff;
 }
 
 .app-header {
   background-color: var(--bg-light);
   border-bottom: 1px solid var(--border-color);
   width: 100%;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+  box-shadow: var(--box-shadow-light);
   line-height: 1.5;
 }
 
@@ -142,7 +121,7 @@ const handleLogout = () => {
   padding: var(--padding-sm) var(--padding-md);
   text-decoration: none;
   color: var(--primary-color);
-  border-radius: 4px;
+  border-radius: var(--border-radius-sm);
   transition: background-color 0.2s ease, color 0.2s ease;
   font-size: 0.95em;
   white-space: nowrap;
@@ -157,7 +136,7 @@ const handleLogout = () => {
 
 .main-navigation a.router-link-exact-active {
   background-color: var(--primary-color);
-  color: white;
+  color: var(--text-on-primary);
   font-weight: 600;
 }
 .main-navigation a.router-link-exact-active:hover {
@@ -179,7 +158,7 @@ const handleLogout = () => {
 }
 .logout-button:hover {
   background-color: var(--danger-color) !important;
-  color: white !important;
+  color: var(--text-on-primary) !important;
 }
 
 .main-content {
@@ -200,10 +179,6 @@ const handleLogout = () => {
 }
 
 .app-footer {
-  position: fixed;
-  bottom: 0;
-  left: 0;
-  width: 100%;
   text-align: center;
   padding: var(--padding-lg) var(--mobile-padding);
   background-color: var(--bg-dark);
@@ -238,16 +213,13 @@ const handleLogout = () => {
     justify-content: flex-end;
   }
   .main-content {
-    padding: 0;
+    padding: 0; 
     margin-top: 30px;
     margin-bottom: 30px;
   }
 }
 
 @media (min-width: 992px) {
-  :root {
-    --content-max-width: 960px;
-  }
   .project-name {
     font-size: 1.7em;
   }
@@ -259,22 +231,4 @@ const handleLogout = () => {
   }
 }
 
-@media (min-width: 1200px) {
-  :root {
-    --content-max-width: 1140px;
-  }
-}
-
-@media (min-width: 1400px) {
-  :root {
-    --content-max-width: 1320px;
-    --desktop-padding: 40px;
-  }
-  .project-name {
-    font-size: 1.8em;
-  }
-   nav a, nav .user-greeting, nav .logout-button {
-    padding: 10px 16px;
-  }
-}
 </style>
