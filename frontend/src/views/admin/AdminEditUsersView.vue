@@ -111,6 +111,8 @@ const handleUpdateUserByAdmin = async (values: Record<string, any>, { setErrors 
     updatePayload.is_active = values.is_active;
     hasChanges = true;
   }
+  console.log('VALOR DE values.is_superuser ANTES DA CONDIÇÃO:', values.is_superuser, 'TIPO:', typeof values.is_superuser);
+  console.log('VALOR DE userForEdit.value.is_superuser:', userForEdit.value.is_superuser);
   if (typeof values.is_superuser === 'boolean' && values.is_superuser !== originalUser.is_superuser) {
     updatePayload.is_superuser = values.is_superuser;
     hasChanges = true;
@@ -207,6 +209,7 @@ const goBackToList = () => {
             class="form-check-input"
             v-model="formValues.is_active"
             :value="true"
+            :unchecked-value="false"
           />
           <label for="isActive-admin-edit" class="form-check-label">Usuário Ativo</label>
           <ErrorMessage name="is_active" class="invalid-feedback" />
@@ -220,6 +223,7 @@ const goBackToList = () => {
             class="form-check-input"
             v-model="formValues.is_superuser"
             :value="true"
+            :unchecked-value="false"
           />
           <label for="isSuperuser-admin-edit" class="form-check-label">É Superusuário</label>
           <ErrorMessage name="is_superuser" class="invalid-feedback" />
