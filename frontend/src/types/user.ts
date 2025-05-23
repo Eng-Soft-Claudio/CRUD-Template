@@ -35,5 +35,7 @@ export interface PasswordResetForm {
 export interface UserUpdate {
   email?: string | null;       
   password?: string | null;    
-  full_name?: string | null;   
+  full_name?: string | null;
+  is_active?: boolean;
+  is_superuser?: boolean;
 }

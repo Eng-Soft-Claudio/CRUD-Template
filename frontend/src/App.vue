@@ -12,6 +12,8 @@ const userDisplayName = computed(() => {
   return '';
 });
 
+const isAdmin = computed(() => authStore.currentUser?.is_superuser || false);
+
 onMounted(async () => {
   await authStore.tryAutoLogin();
 });
@@ -20,6 +22,7 @@ const handleLogout = () => {
   authStore.logout();
 };
 </script>
+
 <template>
   <div class="app-layout">
     <header class="app-header">
@@ -30,6 +33,7 @@ const handleLogout = () => {
         <nav class="main-navigation">
           <RouterLink to="/">Home</RouterLink>
           <RouterLink to="/about">About</RouterLink>
+          <RouterLink v-if="isAdmin" to="/admin/users" class="admin-link">Admin Usuários</RouterLink>
         </nav>
         <div class="user-actions-area">
           <nav class="user-navigation">
@@ -67,6 +71,7 @@ const handleLogout = () => {
   display: flex;
   flex-direction: column;
   min-height: 100vh;
+  background-color: var(--bg-page);
 }
 
 .app-header {
@@ -141,6 +146,19 @@ const handleLogout = () => {
 }
 .main-navigation a.router-link-exact-active:hover {
   background-color: var(--primary-hover-color);
+}
+
+.admin-link {
+  color: var(--admin-link-color) !important;
+  font-weight: bold;
+}
+.admin-link:hover {
+  background-color: var(--admin-link-hover-bg) !important;
+  color: var(--text-color-primary) !important;
+}
+.admin-link.router-link-exact-active {
+  background-color: var(--admin-link-hover-bg) !important;
+  color: var(--text-color-primary) !important;
 }
 
 .user-greeting {

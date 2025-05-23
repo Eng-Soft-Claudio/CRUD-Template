@@ -1,3 +1,4 @@
+
 import { createRouter, createWebHistory } from 'vue-router';
 import HomeView from '../views/HomeView.vue';
 import LoginView from '../views/LoginView.vue';
@@ -5,7 +6,10 @@ import RegisterView from '../views/RegisterView.vue';
 import ChangePasswordView from '../views/ChangePasswordView.vue';
 import RequestPasswordRecoveryView from '../views/RequestPasswordRecoveryView.vue';
 import ResetPasswordView from '../views/ResetPasswordView.vue';
-import UserProfileView from '../views/UserProfileView.vue'; 
+import UserProfileView from '../views/UserProfileView.vue';
+import AdminUsersListView from '../views/admin/AdminUsersListView.vue';
+import AdminEditUsersView from '@/views/admin/AdminEditUsersView.vue';
+
 import { useAuthStore } from '@/stores/auth'; 
 
 const router = createRouter({
@@ -58,6 +62,19 @@ const router = createRouter({
       name: 'profile',
       component: UserProfileView,
       meta: { requiresAuth: true } 
+    },
+    {
+      path: '/admin/users',
+      name: 'admin-users',
+      component: AdminUsersListView,
+      meta: { requiresAuth: true, requiresAdmin: true }
+    },
+    {
+      path: '/admin/users/edit/:id', 
+      name: 'admin-edit-user',
+      component: AdminEditUsersView,
+      meta: { requiresAuth: true, requiresAdmin: true },
+      props: true 
     }
   ]
 });
@@ -65,14 +82,18 @@ const router = createRouter({
 router.beforeEach(async (to, from, next) => {
   const authStore = useAuthStore();
 
-  if (authStore.token && !authStore.user) {
+  if (authStore.token && !authStore.user && to.name !== 'login' && to.name !== 'register' && to.name !== 'forgot-password' && to.name !== 'reset-password') {
     await authStore.tryAutoLogin();
   }
   
   const isAuthenticated = authStore.isAuthenticated;
+  const isSuperuser = authStore.currentUser?.is_superuser || false;
 
   if (to.meta.requiresAuth && !isAuthenticated) {
-    next({ name: 'login' });
+    next({ name: 'login', query: { redirect: to.fullPath } });
+  } else if (to.meta.requiresAdmin && (!isAuthenticated || !isSuperuser) ) {
+    console.warn("Acesso negado à rota de admin."); 
+    next({ name: 'home' }); 
   } else if (to.meta.guestOnly && isAuthenticated) {
     next({ name: 'home' });
   }
