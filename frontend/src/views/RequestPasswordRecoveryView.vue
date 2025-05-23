@@ -48,9 +48,9 @@ const handleRequestRecovery = async (values: Record<string, any>, { setErrors, r
 </script>
 
 <template>
-  <div class="request-recovery-container">
+  <div class="view-card-container request-recovery-layout">
     <h2>Esqueci Minha Senha</h2>
-    <p>
+    <p class="form-description">
       Insira seu endereço de email. Se uma conta estiver associada, instruções para redefinir
       sua senha serão enviadas (em desenvolvimento, o token aparecerá nos logs do backend).
     </p>
@@ -61,22 +61,22 @@ const handleRequestRecovery = async (values: Record<string, any>, { setErrors, r
         <ErrorMessage name="email" class="invalid-feedback" />
       </div>
 
-      <div v-if="successInfoMessage && !errors.apiError" class="info-message">
+      <div v-if="successInfoMessage && !errors.apiError" class="info-message form-feedback">
         {{ successInfoMessage }}
       </div>
-      <div v-if="errors.apiError" class="api-error-message">
+      <div v-if="errors.apiError" class="api-error-message form-feedback">
         {{ errors.apiError }}
       </div>
-      <div v-else-if="authStore.error && !meta.dirty && meta.touched && !errors.apiError" class="api-error-message">
+      <div v-else-if="authStore.error && !meta.dirty && meta.touched && !errors.apiError" class="api-error-message form-feedback">
         {{ authStore.error }}
       </div>
 
-      <button type="submit" :disabled="isSubmitting || authStore.loading || !meta.valid && meta.touched" class="btn-submit">
+      <button type="submit" :disabled="isSubmitting || authStore.loading || !meta.valid && meta.touched" class="btn btn-primary btn-block">
         {{ (isSubmitting || authStore.loading) ? 'Enviando...' : 'Solicitar Recuperação' }}
       </button>
     </Form>
     <hr class="divider"/>
-    <p class="login-link">
+    <p class="form-link-center">
       Lembrou sua senha? <router-link to="/login">Faça login</router-link>
     </p>
     <div v-if="isDev" class="dev-instructions">
@@ -90,125 +90,45 @@ const handleRequestRecovery = async (values: Record<string, any>, { setErrors, r
 </template>
 
 <style scoped>
-.request-recovery-container {
-  max-width: 480px;
-  margin: 50px auto;
-  padding: 30px;
-  background-color: #f9fafb;
-  border-radius: 12px;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+.request-recovery-layout {
+  max-width: 500px;
+  margin: var(--padding-xl) auto;
 }
-.request-recovery-container h2 {
+.request-recovery-layout h2 {
   text-align: center;
-  margin-bottom: 20px;
+  margin-bottom: var(--padding-md);
   font-size: 1.8em;
-  color: #1f2937;
-  font-weight: 600;
 }
-.request-recovery-container > p {
+.form-description {
   text-align: center;
-  margin-bottom: 25px;
-  line-height: 1.6;
-  font-size: 0.95em;
-  color: #4b5563;
+  margin-bottom: var(--padding-lg);
+  font-size: 0.95rem;
+  color: var(--color-text-on-light-secondary);
+  font-family: var(--font-sans-ui);
 }
-.form-group {
-  margin-bottom: 20px;
-}
-.form-group label {
-  display: block;
-  margin-bottom: 8px;
-  font-weight: 500;
-  color: #374151;
-}
-.form-control {
+.btn-block {
   width: 100%;
-  padding: 10px 12px;
-  border: 1px solid #d1d5db;
-  border-radius: 6px;
-  font-size: 1em;
-  transition: border-color 0.2s, box-shadow 0.2s;
+  margin-top: var(--padding-md);
 }
-.form-control:focus {
-  border-color: var(--primary-color, #3b82f6);
-  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.25);
-  outline: none;
-}
-.form-control.is-invalid {
-  border-color: var(--danger-color, #ef4444);
-}
-.invalid-feedback {
-  display: block;
-  color: var(--danger-color, #ef4444);
-  font-size: 0.875em;
-  margin-top: 6px;
-}
-.info-message {
-  color: #055160;
-  background-color: #cff4fc;
-  border: 1px solid #b6effb;
-  padding: 12px;
-  border-radius: 6px;
-  margin-bottom: 20px;
+.form-link-center {
   text-align: center;
-  font-size: 0.9em;
+  margin-top: var(--padding-lg);
+  font-size: 0.9rem;
+  font-family: var(--font-sans-ui);
 }
-.api-error-message {
-  color: var(--danger-color, #ef4444);
-  background-color: #fee2e2;
-  border: 1px solid #fca5a5;
-  padding: 12px;
-  border-radius: 6px;
-  margin-bottom: 20px;
-  text-align: center;
-  font-size: 0.9em;
-}
-.btn-submit {
-  width: 100%;
-  background-color: var(--primary-color, #2563eb);
-  color: white;
-  padding: 12px;
-  border: none;
-  border-radius: 6px;
+.form-link-center a {
   font-weight: 600;
-  font-size: 1em;
-  cursor: pointer;
-  transition: background-color 0.2s;
-}
-.btn-submit:hover:not(:disabled) {
-  background-color: var(--primary-hover-color, #1e40af);
-}
-.btn-submit:disabled {
-  background-color: #9ca3af;
-  cursor: not-allowed;
-}
-.divider {
-  margin-top: 25px;
-  margin-bottom: 25px;
-  border: 0;
-  border-top: 1px solid #e5e7eb;
-}
-.login-link {
-  text-align: center;
-  font-size: 0.9em;
-}
-.login-link a {
-  color: var(--primary-color, #10b981);
-  text-decoration: none;
-  font-weight: 500;
-}
-.login-link a:hover {
-  text-decoration: underline;
 }
 .dev-instructions {
-  margin-top: 25px;
-  padding: 12px;
+  margin-top: var(--padding-lg);
+  padding: var(--padding-md);
   background-color: #fffbeb;
   border: 1px solid #fef3c7;
   color: #78350f;
-  border-radius: 6px;
+  border-radius: var(--border-radius-md);
   font-size: 0.85em;
   text-align: left;
+  font-family: var(--font-sans-ui);
 }
 .dev-instructions strong {
   font-weight: 600;

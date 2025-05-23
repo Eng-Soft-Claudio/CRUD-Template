@@ -44,28 +44,28 @@ const handleDeleteUser = async (userId: number) => {
 </script>
 
 <template>
-  <div class="admin-users-list-container">
-    <header class="admin-header">
+  <div class="view-card-container admin-users-list-layout">
+    <header class="view-header">
       <h1>Painel de Administração - Usuários</h1>
-      <p v-if="authStore.currentUser">
+      <p v-if="authStore.currentUser" class="subtitle">
         Logado como: {{ authStore.currentUser.email }} ({{
           authStore.currentUser.is_superuser ? 'Superuser' : 'Usuário Comum'
         }})
       </p>
     </header>
 
-    <div class="admin-content">
-      <div v-if="isLoading && users.length === 0" class="loading-indicator">
+    <div class="content-area">
+      <div v-if="isLoading && users.length === 0" class="loading-indicator form-feedback">
         <p>Carregando usuários...</p>
       </div>
-      <div v-else-if="error" class="error-message-box">
+      <div v-else-if="error" class="error-message form-feedback">
         <p>{{ error }}</p>
       </div>
-      <div v-else-if="users.length === 0 && !isLoading" class="no-users-message">
+      <div v-else-if="users.length === 0 && !isLoading" class="info-message form-feedback">
         <p>Nenhum usuário encontrado.</p>
       </div>
       <div v-else class="users-table-wrapper">
-        <table class="users-table">
+        <table class="data-table">
           <thead>
             <tr>
               <th>ID</th>
@@ -87,21 +87,21 @@ const handleDeleteUser = async (userId: number) => {
                 </span>
               </td>
               <td>
-                <span :class="user.is_superuser ? 'status-admin' : ''">
+                <span :class="user.is_superuser ? 'status-admin' : 'status-normal'">
                   {{ user.is_superuser ? 'Sim' : 'Não' }}
                 </span>
               </td>
               <td class="actions-cell">
                 <button
                   @click="handleEditUser(user.id)"
-                  class="btn-action btn-edit"
+                  class="btn btn-small btn-accent"
                   :disabled="isLoading"
                 >
                   Editar
                 </button>
                 <button
                   @click="handleDeleteUser(user.id)"
-                  class="btn-action btn-delete"
+                  class="btn btn-small btn-danger"
                   :disabled="isLoading"
                 >
                   Deletar
@@ -111,11 +111,15 @@ const handleDeleteUser = async (userId: number) => {
           </tbody>
         </table>
       </div>
-      <div class="admin-actions-footer">
-        <RouterLink :to="{ name: 'admin-create-user' }" class="btn-primary-action"
+      <div class="view-actions-footer">
+        <RouterLink :to="{ name: 'admin-create-user' }" class="btn btn-primary"
           >Criar Novo Usuário</RouterLink
         >
-        <button @click="adminUsersStore.fetchUsers()" :disabled="isLoading" class="btn-refresh">
+        <button
+          @click="adminUsersStore.fetchUsers()"
+          :disabled="isLoading"
+          class="btn btn-secondary"
+        >
           {{ isLoading ? 'Atualizando...' : 'Atualizar Lista' }}
         </button>
       </div>
@@ -124,152 +128,89 @@ const handleDeleteUser = async (userId: number) => {
 </template>
 
 <style scoped>
-.admin-users-list-container {
-  max-width: var(--content-max-width, 1200px);
-  margin: 20px auto;
-  padding: 20px var(--desktop-padding, 30px);
+.admin-users-list-layout {
+  max-width: 1000px;
 }
-.admin-header {
-  margin-bottom: 30px;
-  padding-bottom: 15px;
-  border-bottom: 1px solid var(--border-color, #eee);
+.view-header {
+  margin-bottom: var(--padding-lg);
+  padding-bottom: var(--padding-md);
+  border-bottom: 1px solid var(--color-border);
 }
-.admin-header h1 {
-  font-size: 2em;
-  color: var(--text-color-primary, #2c3e50);
-  margin-bottom: 5px;
+.view-header h1 {
+  font-size: 1.8em;
+  margin-bottom: var(--padding-xs);
 }
-.admin-header p {
+.subtitle {
   font-size: 0.9em;
-  color: var(--text-color-secondary, #7f8c8d);
+  color: var(--color-text-on-light-secondary);
+  font-family: var(--font-sans-ui);
 }
 
-.admin-content {
-  padding-top: 10px;
+.content-area {
+  margin-top: var(--padding-md);
 }
-.loading-indicator p,
-.no-users-message p {
-  text-align: center;
-  font-size: 1.1em;
-  color: var(--text-color-secondary);
-  padding: 20px;
-}
-.error-message-box p {
-  color: var(--danger-color, #e74c3c);
-  background-color: #fdecea;
-  border: 1px solid #f5b0b0;
-  padding: 15px;
-  border-radius: var(--border-radius-md, 6px);
-  text-align: center;
-}
-
 .users-table-wrapper {
-  overflow-x: auto;
+  overflow-x: auto; /* Permite rolagem horizontal em tabelas largas */
 }
-.users-table {
+.data-table {
+  /* Classe global potencial para tabelas */
   width: 100%;
   border-collapse: collapse;
-  margin-top: 20px;
-  font-size: 0.95em;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+  margin-top: var(--padding-md);
+  font-size: 0.9rem;
+  font-family: var(--font-sans-ui);
 }
-.users-table th,
-.users-table td {
-  border: 1px solid var(--border-color, #ddd);
-  padding: 10px 12px;
+.data-table th,
+.data-table td {
+  border: 1px solid var(--color-border);
+  padding: var(--padding-sm) var(--padding-md);
   text-align: left;
   vertical-align: middle;
 }
-.users-table th {
-  background-color: var(--bg-light, #f8f9fa);
-  color: var(--text-color-primary, #333);
+.data-table th {
+  background-color: var(--color-bg-hover-subtle); /* Fundo sutil para header da tabela */
   font-weight: 600;
 }
-.users-table tbody tr:nth-child(even) {
-  background-color: #fdfdfd;
+.data-table tbody tr:nth-child(even) {
+  background-color: var(--color-bg-light); /* Zebrado sutil */
 }
-.users-table tbody tr:hover {
-  background-color: #f1f1f1;
+.data-table tbody tr:hover {
+  background-color: var(--color-bg-hover-subtle);
 }
 
 .status-active {
-  color: var(--success-color, #28a745);
-  font-weight: bold;
+  color: var(--color-success);
+  font-weight: 600;
 }
 .status-inactive {
-  color: var(--danger-color, #dc3545);
-  font-weight: bold;
+  color: var(--color-danger);
+  font-weight: 600;
 }
 .status-admin {
-  color: var(--info-color, #17a2b8);
-  font-weight: bold;
+  color: var(--color-brand-secondary);
+  font-weight: 600;
+}
+.status-normal {
+  color: var(--color-text-on-light-secondary);
 }
 
 .actions-cell {
   white-space: nowrap;
-  width: 1%;
+  width: 1%; /* Tenta minimizar a largura */
   text-align: center;
 }
-.btn-action {
-  padding: 6px 10px;
-  margin: 0 4px;
-  border: none;
-  border-radius: var(--border-radius-sm, 4px);
-  cursor: pointer;
+.btn-small {
+  /* Classe utilitária global potencial */
+  padding: var(--padding-xs) var(--padding-sm);
   font-size: 0.85em;
-  transition: opacity 0.2s;
+  margin: 0 2px;
 }
-
-.btn-action:hover:not(:disabled) {
-  opacity: 0.8;
-}
-.btn-edit {
-  background-color: var(--primary-color, #007bff);
-  color: white;
-}
-.btn-delete {
-  background-color: var(--danger-color, #dc3545);
-  color: white;
-}
-.btn-action:disabled {
-  opacity: 0.5;
-  cursor: not-allowed;
-}
-
-.admin-actions-footer {
-  margin-top: 30px;
+.view-actions-footer {
+  margin-top: var(--padding-lg);
   display: flex;
   justify-content: flex-end;
-  gap: 15px;
-}
-.btn-refresh {
-  padding: 10px 18px;
-  font-size: 1em;
-  border: none;
-  border-radius: var(--border-radius-md, 6px);
-  cursor: pointer;
-}
-.btn-refresh {
-  background-color: var(--secondary-color, #6c757d);
-  color: white;
-}
-.btn-refresh:hover:not(:disabled) {
-  background-color: var(--secondary-hover-color, #5a6268);
-}
-.btn-refresh:disabled,
-.btn-primary-action:disabled {
-  background-color: #ccc;
-}
-.btn-primary-action {
-  padding: 10px 18px;
-  font-size: 1em;
-  border: none;
-  border-radius: var(--border-radius-md, 6px);
-  cursor: pointer;
-  background-color: var(--primary-color, #007bff);
-  color: white;
-}
-.btn-primary-action:hover:not(:disabled) {
-  background-color: var(--primary-hover-color, #0056b3);
+  gap: var(--padding-md);
+  border-top: 1px solid var(--color-border);
+  padding-top: var(--padding-lg);
 }
 </style>

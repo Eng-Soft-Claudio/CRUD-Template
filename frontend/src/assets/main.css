@@ -1,109 +1,340 @@
+/* frontend/src/assets/main.css */
 
+/* 1. Importação de Fontes (Exemplo com Merriweather e Open Sans do Google Fonts) */
+@import url('https://fonts.googleapis.com/css2?family=Merriweather:ital,wght@0,300;0,400;0,700;0,900;1,400&family=Open+Sans:wght@400;600;700&display=swap');
+
+/* 2. Variáveis CSS Globais (Paleta Premium/Vintage e Métricas) */
 :root {
-  --header-height: 60px;
+  /* === Fontes === */
+  --font-serif-main: 'Merriweather', Georgia, serif;
+  --font-sans-ui: 'Open Sans', Arial, sans-serif;
+
+  /* === Cores Primárias (Tema Sóbrio/Vintage) === */
+  --color-brand-primary: #5a3e2b;      /* Marrom Escuro (Couro Envelhecido/Madeira Nobre) */
+  --color-brand-secondary: #c0a062;   /* Dourado Antigo/Ocre (Acento Principal) */
+  --color-brand-tertiary: #7d6f60;    /* Cinza Acastanhado (Neutro Quente) */
+
+  /* === Cores de Fundo === */
+  --color-bg-page: #fdfaf6;          /* Off-white / Creme Muito Claro (Fundo da Página) */
+  --color-bg-card: #ffffff;          /* Branco para Cards/Caixas de Conteúdo */
+  --color-bg-header-footer: #3a2d27; /* Marrom Bem Escuro (Header/Footer) */
+  --color-bg-input: #fefcf9;         /* Fundo levemente off-white para inputs */
+  --color-bg-hover-subtle: #f5f2ed;  /* Hover sutil para itens de lista, etc. */
+
+  /* === Cores de Texto === */
+  --color-text-on-dark: #e4d8c7;     /* Bege Claro/Dourado Pálido (Texto sobre fundos escuros) */
+  --color-text-on-light-primary: #3a2d27; /* Marrom Escuro (Texto principal sobre fundos claros) */
+  --color-text-on-light-secondary: #7d6f60;/* Cinza Acastanhado (Texto secundário) */
+  --color-text-on-brand: #ffffff;    /* Branco para texto em botões com cor da marca */
+  --color-link: var(--color-brand-secondary); /* Links em dourado antigo */
+  --color-link-hover: #a38046;       /* Dourado antigo mais escuro para hover */
+
+  /* === Cores de Estado e Feedback === */
+  --color-success: #38761d;           /* Verde Escuro Sóbrio */
+  --color-error: #a02c2c;             /* Vermelho Escuro Sóbrio */
+  --color-warning: #b45309;           /* Âmbar/Laranja Queimado */
+  --color-info: #2563eb;             /* Azul Sóbrio (se precisar de um azul contrastante) */
+
+  /* === Bordas e Sombras === */
+  --color-border: #dcd0c0;           /* Borda em tom bege/marrom claro */
+  --color-border-input: #b9a898;
+  --box-shadow-soft: 0 2px 8px rgba(0, 0, 0, 0.06);
+  --box-shadow-medium: 0 4px 12px rgba(0, 0, 0, 0.08);
+  --box-shadow-strong: 0 6px 16px rgba(0, 0, 0, 0.1);
+
+  /* === Dimensões e Espaçamento === */
+  --header-height: 100px;
   --footer-height: 60px;
-  --content-max-width: 1140px;
-  --primary-color: #007bff;
-  --primary-hover-color: #0056b3;
-  --secondary-color: #6c757d;
-  --secondary-hover-color: #545b62;
-  --text-color-primary: #212529;
-  --text-color-secondary: #6c757d;
-  --text-color-light: #f8f9fa;
-  --text-on-primary: #ffffff;
-  --bg-light: #f8f9fa;
-  --bg-dark: #343a40;
-  --bg-page: #ffffff;
-  --border-color: #dee2e6;
-  --danger-color: #dc3545;
-  --danger-hover-color: #c82333;
-  --success-color: #28a745;
-  --warning-color: #ffc107;
-  --info-color: #17a2b8;
-
-  --link-hover-bg: #e9ecef;
-
-  --padding-sm: 8px;
-  --padding-md: 12px;
-  --padding-lg: 16px;
-
-  --mobile-padding: 15px;
-  --desktop-padding: 30px;
-
-  --border-radius-sm: 4px;
-  --border-radius-md: 6px;
+  --content-max-width: 90%;
+  --content-max-heigth: 90%;
+  --border-radius-sm: 3px;
+  --border-radius-md: 5px;
   --border-radius-lg: 8px;
 
-  --box-shadow-light: 0 2px 4px rgba(0, 0, 0, 0.05);
-  --box-shadow-medium: 0 4px 8px rgba(0, 0, 0, 0.07);
+  --padding-xs: 4px;
+  --padding-sm: 8px;
+  --padding-md: 16px;
+  --padding-lg: 24px;
+  --padding-xl: 32px;
+
+  --page-padding-mobile: var(--padding-md);
+  --page-padding-desktop: var(--padding-xl);
 }
 
-html,
-body {
-  height: 100%;
-  margin: 0;
-  padding: 0;
-  font-family:
-    Inter,
-    -apple-system,
-    BlinkMacSystemFont,
-    'Segoe UI',
-    Roboto,
-    Oxygen,
-    Ubuntu,
-    Cantarell,
-    'Fira Sans',
-    'Droid Sans',
-    'Helvetica Neue',
-    sans-serif;
-  color: var(--text-color-primary);
-  background-color: var(--bg-page);
-  line-height: 1.6;
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
-}
-
-#app {
-  min-height: 100%;
-  max-width: 1280px;
-  margin: 0 auto;
-  padding: 2rem;
-  font-weight: normal;
-}
-
-.green {
-  text-decoration: none;
-  color: hsla(160, 100%, 37%, 1);
-  transition: 0.4s;
-  padding: 3px;
-}
-
+/* 3. Reset Básico e Estilos Globais para HTML, BODY */
 *,
 *::before,
 *::after {
   box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+html {
+  font-size: 16px; /* Base para REMs */
+  scroll-behavior: smooth;
+}
+
+body {
+  font-family: var(--font-serif-main);
+  color: var(--color-text-on-light-primary);
+  background-color: var(--color-bg-page);
+  line-height: 1.65;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  min-height: 90vh; /* Garante que o body ocupe pelo menos a altura da viewport */
+}
+
+/* Estilo para o elemento root do Vue */
+#app {
+  min-height: 100vh;
+  /* display: flex; flex-direction: column; será controlado pelo .app-layout no App.vue */
+}
+
+/* 4. Estilos de Tipografia Base */
+h1, h2, h3, h4, h5, h6 {
+  font-family: var(--font-serif-main); /* Ou uma variação mais 'display' da serifada */
+  font-weight: 700; /* Pode variar por nível */
+  line-height: 1.3;
+  margin-bottom: var(--padding-md);
+  color: var(--color-text-on-light-primary);
+}
+
+h1 { font-size: 2.5rem; /* ~40px */ }
+h2 { font-size: 2rem;   /* ~32px */ }
+h3 { font-size: 1.75rem;/* ~28px */ }
+h4 { font-size: 1.5rem; /* ~24px */ }
+h5 { font-size: 1.25rem;/* ~20px */ }
+h6 { font-size: 1rem;   /* ~16px */ }
+
+p {
+  margin-bottom: var(--padding-md);
+  font-size: 1rem; /* 16px */
 }
 
 a {
+  color: var(--color-link);
   text-decoration: none;
-  color: var(--primary-color);
+  transition: color 0.2s ease;
 }
 a:hover {
-  color: var(--primary-hover-color);
+  color: var(--color-link-hover);
+  text-decoration: underline;
 }
 
-img {
-  max-width: 100%;
-  height: auto;
+hr.divider {
+  margin-top: var(--padding-lg);
+  margin-bottom: var(--padding-lg);
+  border: 0;
+  border-top: 1px solid var(--color-border);
+}
+
+/* 5. Estilos Comuns para Elementos de Formulário */
+.form-group {
+  margin-bottom: var(--padding-lg);
+}
+
+.form-group label,
+label.form-check-label { /* Estilo comum para labels */
+  display: block;
+  margin-bottom: var(--padding-sm);
+  font-weight: 600; /* Mais peso para labels */
+  font-family: var(--font-sans-ui);
+  font-size: 0.9rem;
+  color: var(--color-text-on-light-primary);
+}
+
+.form-control,
+input[type="text"],
+input[type="email"],
+input[type="password"],
+input[type="search"],
+select,
+textarea {
+  display: block;
+  width: 100%;
+  padding: var(--padding-sm) var(--padding-md);
+  font-family: var(--font-sans-ui);
+  font-size: 1rem;
+  font-weight: 400;
+  line-height: 1.5;
+  color: var(--color-text-on-light-primary);
+  background-color: var(--color-bg-input);
+  background-clip: padding-box;
+  border: 1px solid var(--color-border-input);
+  appearance: none; /* Remove estilos padrão do OS */
+  border-radius: var(--border-radius-md);
+  transition: border-color 0.15s ease-in-out, box-shadow 0.15s ease-in-out;
+}
+.form-control:focus,
+input[type="text"]:focus,
+input[type="email"]:focus,
+input[type="password"]:focus,
+input[type="search"]:focus,
+select:focus,
+textarea:focus {
+  color: var(--color-text-on-light-primary);
+  background-color: var(--color-bg-input);
+  border-color: var(--color-brand-secondary);
+  outline: 0;
+  box-shadow: 0 0 0 0.25rem rgba(var(--color-brand-secondary-rgb, 192, 160, 98), 0.25); /* Crie --color-brand-secondary-rgb se necessário */
+}
+.form-control.is-invalid,
+input.is-invalid { /* VeeValidate adiciona esta classe */
+  border-color: var(--color-danger);
+}
+.form-control.is-invalid:focus {
+  box-shadow: 0 0 0 0.25rem rgba(var(--color-danger-rgb, 162, 44, 44), 0.25); /* Crie --color-danger-rgb */
+}
+
+.form-check-input { /* Estilo para checkboxes, VeeValidate pode precisar de classes custom */
+  width: 1.15em;
+  height: 1.15em;
+  margin-top: 0.2em; /* Alinhar melhor com o label */
+  vertical-align: top;
+  background-color: var(--color-bg-input);
+  border: 1px solid var(--color-border-input);
+  border-radius: var(--border-radius-sm);
+  cursor: pointer;
+}
+.form-check-input[type="checkbox"] { border-radius: var(--border-radius-sm); }
+.form-check-input:checked {
+  background-color: var(--color-brand-primary);
+  border-color: var(--color-brand-primary);
+}
+.form-check-input:focus {
+  border-color: var(--color-brand-secondary);
+  outline: 0;
+  box-shadow: 0 0 0 0.25rem rgba(var(--color-brand-secondary-rgb, 192, 160, 98), 0.25);
+}
+.form-group-checkbox {
+  display: flex;
+  align-items: center;
+  gap: var(--padding-sm);
+}
+.form-group-checkbox label.form-check-label {
+  margin-bottom: 0;
+  font-weight: normal;
+}
+
+.invalid-feedback {
+  display: block; /* ou 'none' e VeeValidate controla */
+  width: 100%;
+  margin-top: var(--padding-xs);
+  font-size: 0.875em;
+  font-family: var(--font-sans-ui);
+  color: var(--color-danger);
+}
+.form-text {
+  font-size: 0.85em;
+  color: var(--color-text-on-light-secondary);
+  margin-top: var(--padding-xs);
   display: block;
 }
 
-/* Ajustes nos media queries do main.css para --content-max-width */
-@media (hover: hover) {
-  a:hover {
-    background-color: hsla(160, 100%, 37%, 0.2);
-  }
+
+/* 6. Estilos Comuns para Botões */
+.btn {
+  display: inline-block;
+  font-family: var(--font-sans-ui);
+  font-weight: 600;
+  line-height: 1.5;
+  color: var(--text-on-primary);
+  text-align: center;
+  text-decoration: none;
+  vertical-align: middle;
+  cursor: pointer;
+  user-select: none;
+  background-color: transparent;
+  border: 1px solid transparent;
+  padding: var(--padding-sm) var(--padding-lg); /* Base padding */
+  font-size: 1rem;
+  border-radius: var(--border-radius-md);
+  transition: color 0.15s ease-in-out, background-color 0.15s ease-in-out, border-color 0.15s ease-in-out, box-shadow 0.15s ease-in-out;
 }
+.btn:disabled {
+  opacity: 0.65;
+  pointer-events: none;
+}
+
+.btn-primary {
+  color: var(--text-on-primary);
+  background-color: var(--color-brand-primary);
+  border-color: var(--color-brand-primary);
+}
+.btn-primary:hover {
+  background-color: #4a2f1f; /* Um pouco mais escuro que --color-brand-primary */
+  border-color: #4a2f1f;
+}
+.btn-primary:focus {
+  box-shadow: 0 0 0 0.25rem rgba(var(--color-brand-primary-rgb, 90, 62, 43), 0.5);
+}
+
+.btn-secondary {
+  color: var(--color-text-on-light-primary);
+  background-color: var(--color-brand-tertiary);
+  border-color: var(--color-brand-tertiary);
+}
+.btn-secondary:hover {
+  background-color: #695b4e;
+  border-color: #695b4e;
+  color: var(--text-on-primary);
+}
+
+.btn-accent, .btn-gold {
+  color: var(--color-text-on-light-primary);
+  background-color: var(--color-brand-secondary);
+  border-color: var(--color-brand-secondary);
+}
+.btn-accent:hover, .btn-gold:hover {
+  background-color: var(--color-link-hover);
+  border-color: var(--color-link-hover);
+}
+
+.btn-danger {
+  color: var(--text-on-primary);
+  background-color: var(--color-danger);
+  border-color: var(--color-danger);
+}
+.btn-danger:hover {
+  background-color: #802323;
+  border-color: #802323;
+}
+
+/* 7. Estilos para "Caixas" de Conteúdo de Views */
+.view-card-container {
+  background-color: var(--color-bg-card);
+  padding: var(--padding-lg) var(--padding-xl);
+  border-radius: var(--border-radius-lg);
+  box-shadow: var(--box-shadow-medium);
+  margin-bottom: var(--padding-xl);
+}
+.view-card-container h1,
+.view-card-container h2 {
+  margin-top: 0; /* Remove margem superior do primeiro título dentro do card */
+  border-bottom: 1px solid var(--color-border);
+  padding-bottom: var(--padding-md);
+  margin-bottom: var(--padding-lg);
+}
+
+/* 8. Feedback Messages (para erros API, success, etc.) */
+.form-feedback {
+  padding: var(--padding-md);
+  margin-top: var(--padding-md);
+  margin-bottom: var(--padding-md);
+  border-radius: var(--border-radius-md);
+  font-size: 0.95em;
+  text-align: center;
+  border-width: 1px;
+  border-style: solid;
+}
+.success-message.form-feedback { color: var(--color-success); background-color: #eaf6eb; border-color: #a5d6a7;}
+.error-message.form-feedback,
+.api-error-message.form-feedback { color: var(--color-danger); background-color: #fdecea; border-color: #f5b0b1;}
+.info-message.form-feedback { color: var(--color-info); background-color: #e0f7fa; border-color: #b2ebf2;}
+
+
+/* Media query para ajustar a largura máxima do conteúdo globalmente */
 @media (min-width: 768px) {
   :root {
     --content-max-width: 720px;
@@ -122,10 +353,5 @@ img {
 @media (min-width: 1400px) {
   :root {
     --content-max-width: 1320px;
-  }
-}
-@media (min-width: 1600px) {
-  :root {
-    --content-max-width: 1400px;
   }
 }

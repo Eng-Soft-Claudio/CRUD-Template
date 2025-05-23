@@ -67,10 +67,10 @@ const goBackToList = () => {
 </script>
 
 <template>
-  <div class="admin-create-user-container">
-    <header class="page-header">
-      <h1>Criar Novo Usuário (Admin)</h1>
-      <button @click="goBackToList" class="btn-back btn-secondary">Voltar para Lista</button>
+  <div class="view-card-container admin-create-user-layout">
+    <header class="page-header-alt">
+      <h1>Criar Novo Usuário <span class="admin-tag">(Admin)</span></h1>
+      <button @click="goBackToList" class="btn btn-secondary btn-small">Voltar para Lista</button>
     </header>
 
     <Form
@@ -138,6 +138,7 @@ const goBackToList = () => {
             id="isActive-admin-create"
             class="form-check-input"
             :value="true"
+            checked
           />
           <label for="isActive-admin-create" class="form-check-label">Usuário Ativo</label>
         </div>
@@ -164,11 +165,11 @@ const goBackToList = () => {
       </div>
 
       <div class="form-actions">
-        <button type="button" @click="goBackToList" class="btn-secondary">Cancelar</button>
+        <button type="button" @click="goBackToList" class="btn btn-secondary">Cancelar</button>
         <button
           type="submit"
           :disabled="isSubmittingForm || (meta.touched && !meta.valid)"
-          class="btn-primary"
+          class="btn btn-primary"
         >
           {{ isSubmittingForm ? 'Criando...' : 'Criar Usuário' }}
         </button>
@@ -178,151 +179,61 @@ const goBackToList = () => {
 </template>
 
 <style scoped>
-/* Estilos podem ser muito similares aos de AdminEditUserView.vue, adapte se necessário */
-.admin-create-user-container {
+/* Estilos muito similares a AdminEditUserView.vue */
+.admin-create-user-layout {
   max-width: 700px;
-  margin: 30px auto;
-  padding: 25px;
-  background-color: #fff;
-  border-radius: 8px;
-  box-shadow: 0 3px 10px rgba(0, 0, 0, 0.07);
+  margin: var(--padding-xl) auto;
 }
-.page-header {
+.page-header-alt {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 30px;
-  padding-bottom: 15px;
-  border-bottom: 1px solid var(--border-color, #eee);
+  margin-bottom: var(--padding-lg);
+  padding-bottom: var(--padding-md);
+  border-bottom: 1px solid var(--color-border);
 }
-.page-header h1 {
+.page-header-alt h1 {
   font-size: 1.6em;
-  color: var(--text-color-primary, #2c3e50);
+  color: var(--text-color-primary);
   margin: 0;
 }
-.btn-back {
-  padding: 8px 15px;
-  font-size: 0.9em;
+.admin-tag {
+  font-size: 0.8em;
+  color: var(--color-text-on-light-secondary);
+  font-weight: normal;
 }
-
+.btn-back {
+  /* btn, btn-secondary, btn-small virão do global */
+}
 .create-user-form {
-  margin-top: 20px;
+  margin-top: var(--padding-md);
 }
 .form-row {
   display: flex;
   flex-direction: column;
-  gap: 0px;
+  gap: 0;
   margin-bottom: 0;
 }
 .form-group {
-  margin-bottom: 22px;
+  margin-bottom: var(--padding-lg);
   flex: 1;
 }
 .form-row .form-group {
-  margin-bottom: 22px;
-}
-.form-group label {
-  display: block;
-  margin-bottom: 8px;
-  font-weight: 500;
-  color: #34495e;
-}
-.form-control {
-  width: 100%;
-  padding: 10px 12px;
-  border: 1px solid #bdc3c7;
-  border-radius: var(--border-radius-md, 6px);
-  font-size: 1em;
-  transition:
-    border-color 0.2s,
-    box-shadow 0.2s;
-}
-.form-control:focus {
-  border-color: var(--primary-color, #3498db);
-  box-shadow: 0 0 0 3px rgba(52, 152, 219, 0.2);
-  outline: none;
-}
-.form-control.is-invalid {
-  border-color: var(--danger-color, #e74c3c);
-}
-.invalid-feedback {
-  display: block;
-  color: var(--danger-color, #e74c3c);
-  font-size: 0.875em;
-  margin-top: 5px;
-}
-.form-text {
-  font-size: 0.85em;
-  color: var(--text-color-secondary, #7f8c8d);
-  margin-top: 5px;
-  display: block;
+  margin-bottom: var(--padding-lg); /* Para quando estiverem em linha */
 }
 .form-group-checkbox {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  margin-top: 10px;
-}
-.form-group-checkbox label {
-  margin-bottom: 0;
-  cursor: pointer;
-  font-weight: normal;
-}
-.form-check-input {
-  width: auto;
-  margin-right: 0;
-  height: 1.1em;
-  width: 1.1em;
-  cursor: pointer;
+  align-items: center; /* herdado de .form-group */
 }
 .form-actions {
-  margin-top: 30px;
+  margin-top: var(--padding-lg);
   display: flex;
   justify-content: flex-end;
-  gap: 12px;
-}
-.btn-primary,
-.btn-secondary {
-  padding: 10px 20px;
-  border: none;
-  border-radius: var(--border-radius-md, 6px);
-  cursor: pointer;
-  font-size: 1em;
-  font-weight: 500;
-}
-.btn-primary {
-  background-color: var(--primary-color, #3498db);
-  color: white;
-}
-.btn-primary:hover:not(:disabled) {
-  background-color: var(--primary-hover-color, #2980b9);
-}
-.btn-secondary {
-  background-color: #bdc3c7;
-  color: #2c3e50;
-}
-.btn-secondary:hover:not(:disabled) {
-  background-color: #95a5a6;
-}
-.btn-primary:disabled,
-.btn-secondary:disabled {
-  background-color: #e0e0e0;
-  cursor: not-allowed;
-}
-.api-error-message {
-  color: var(--danger-color, #c0392b);
-  background-color: #fdecea;
-  border: 1px solid #f5b0b1;
-  padding: 12px;
-  border-radius: var(--border-radius-md);
-  margin-bottom: 20px;
-  text-align: center;
-  font-size: 0.95em;
+  gap: var(--padding-md);
 }
 @media (min-width: 768px) {
   .form-row {
     flex-direction: row;
-    gap: 20px;
+    gap: var(--padding-lg);
   }
 }
 </style>

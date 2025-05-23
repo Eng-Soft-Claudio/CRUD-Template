@@ -83,16 +83,17 @@ const handleResetPassword = async (values: Record<string, any>, { setErrors }: a
 </script>
 
 <template>
-  <div class="reset-password-container">
+  <div class="view-card-container reset-password-layout">
     <h2>Redefinir Senha</h2>
-    <Form :validation-schema="validationSchema" :initial-values="formValues" @submit="handleResetPassword"
-      v-slot="{ errors, isSubmitting, meta, values }">
+
+    <Form :validation-schema="validationSchema" v-model:values="formValues" @submit="handleResetPassword"
+      v-slot="{ errors, isSubmitting, meta }">
       <div class="form-group">
         <label for="inputToken-reset">Token de Recuperação:</label>
         <Field name="inputToken" type="text" id="inputToken-reset" class="form-control"
           :class="{ 'is-invalid': errors.inputToken }" placeholder="Cole o token aqui" />
         <ErrorMessage name="inputToken" class="invalid-feedback" />
-        <small v-if="!route.query.token && !values.inputToken" class="form-text">
+        <small v-if="!route.query.token && !formValues.inputToken" class="form-text">
           Cole o token dos logs do backend ou o token recebido por email.
         </small>
       </div>
@@ -111,132 +112,45 @@ const handleResetPassword = async (values: Record<string, any>, { setErrors }: a
         <ErrorMessage name="newPasswordConfirm" class="invalid-feedback" />
       </div>
 
-      <div v-if="errors.apiError" class="api-error-message">
+      <div v-if="errors.apiError" class="api-error-message form-feedback">
         {{ errors.apiError }}
       </div>
-      <div v-else-if="authStore.error && !meta.dirty && meta.touched && !errors.apiError" class="api-error-message">
-        {{ authStore.error }}
+      <div v-else-if="authStore.error && !meta.dirty && meta.touched && !errors.apiError" class="api-error-message form-feedback">
+         {{ authStore.error }}
       </div>
 
       <button type="submit" :disabled="isSubmitting || authStore.loading || !meta.valid && meta.touched"
-        class="btn-submit">
+        class="btn btn-primary btn-block">
         {{ (isSubmitting || authStore.loading) ? 'Redefinindo...' : 'Redefinir Senha' }}
       </button>
     </Form>
-    <p v-if="!authStore.isAuthenticated" class="login-link">
+    <p v-if="!authStore.isAuthenticated" class="form-link-center">
       Lembrou sua senha? <router-link to="/login">Faça login</router-link>
     </p>
   </div>
 </template>
 
 <style scoped>
-.reset-password-container {
+.reset-password-layout {
   max-width: 480px;
-  margin: 50px auto;
-  padding: 30px;
-  background-color: #f9fafb;
-  border-radius: 12px;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  margin: var(--padding-xl) auto;
 }
-
-.reset-password-container h2 {
+.reset-password-layout h2 {
   text-align: center;
-  margin-bottom: 25px;
-  font-size: 1.8em;
-  color: #1f2937;
-  font-weight: 600;
+  margin-bottom: var(--padding-lg);
+  font-size: 1.8em; /* Coerente com RequestPasswordRecoveryView */
 }
-
-.form-group {
-  margin-bottom: 20px;
-}
-
-.form-group label {
-  display: block;
-  margin-bottom: 8px;
-  font-weight: 500;
-  color: #374151;
-}
-
-.form-control {
+.btn-block {
   width: 100%;
-  padding: 10px 12px;
-  border: 1px solid #d1d5db;
-  border-radius: 6px;
-  font-size: 1em;
-  transition: border-color 0.2s, box-shadow 0.2s;
+  margin-top: var(--padding-md);
 }
-
-.form-control:focus {
-  border-color: var(--primary-color, #3b82f6);
-  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.25);
-  outline: none;
-}
-
-.form-control.is-invalid {
-  border-color: var(--danger-color, #ef4444);
-}
-
-.invalid-feedback {
-  display: block;
-  color: var(--danger-color, #ef4444);
-  font-size: 0.875em;
-  margin-top: 6px;
-}
-
-.form-text {
-  display: block;
-  font-size: 0.8em;
-  color: #6b7280;
-  margin-top: 6px;
-}
-
-.api-error-message {
-  color: var(--danger-color, #ef4444);
-  background-color: #fee2e2;
-  border: 1px solid #fca5a5;
-  padding: 10px;
-  border-radius: 6px;
-  margin-bottom: 20px;
+.form-link-center {
   text-align: center;
-  font-size: 0.9em;
+  margin-top: var(--padding-lg);
+  font-size: 0.9rem;
+  font-family: var(--font-sans-ui);
 }
-
-.btn-submit {
-  width: 100%;
-  background-color: var(--primary-color, #2563eb);
-  color: white;
-  padding: 12px;
-  border: none;
-  border-radius: 6px;
+.form-link-center a {
   font-weight: 600;
-  font-size: 1em;
-  cursor: pointer;
-  transition: background-color 0.2s;
-}
-
-.btn-submit:hover:not(:disabled) {
-  background-color: var(--primary-hover-color, #1e40af);
-}
-
-.btn-submit:disabled {
-  background-color: #9ca3af;
-  cursor: not-allowed;
-}
-
-.login-link {
-  text-align: center;
-  margin-top: 25px;
-  font-size: 0.9em;
-}
-
-.login-link a {
-  color: var(--primary-color, #10b981);
-  text-decoration: none;
-  font-weight: 500;
-}
-
-.login-link a:hover {
-  text-decoration: underline;
 }
 </style>
