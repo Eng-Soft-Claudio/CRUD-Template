@@ -49,7 +49,7 @@ const handleLogout = () => {
       <div class="nav-container">
         <div class="logo-area">
           <RouterLink to="/" class="project-name" @click="closeMobileMenu"
-            >CRUD Template</RouterLink
+            >Template</RouterLink
           >
         </div>
 
@@ -90,7 +90,6 @@ const handleLogout = () => {
     </header>
 
     <main class="main-content" @click="closeMobileMenu">
-      <!-- Fecha menu ao clicar no conteúdo principal -->
       <RouterView v-slot="{ Component }">
         <transition name="route-fade" mode="out-in">
           <component :is="Component" />
@@ -105,8 +104,6 @@ const handleLogout = () => {
 </template>
 
 <style scoped>
-/* :root e variáveis CSS como definido em main.css globalmente */
-
 .app-layout {
   display: flex;
   flex-direction: column;
@@ -121,35 +118,37 @@ const handleLogout = () => {
   line-height: 1.5;
   position: sticky;
   top: 0;
-  z-index: 1000;
+  z-index: 1020;
 }
 
 .nav-container {
   display: flex;
-  justify-content: space-between; /* Alinha logo à esquerda e o resto à direita */
+  justify-content: space-between;
   align-items: center;
   padding: 0 var(--mobile-padding);
   min-height: var(--header-height);
-  position: relative; /* Para o posicionamento absoluto do menu mobile */
+  position: relative;
+  max-width: var(--content-max-width);
+  margin: 0 auto;
 }
 
 .logo-area {
-  /* Não precisa mais de margin-bottom, pois é linha única em mobile com hamburger */
+  margin-right: var(--padding-lg);
 }
 .project-name {
+  margin: 15px;
   font-size: 1.5em;
   font-weight: 700;
   color: var(--text-color-primary);
   text-decoration: none;
 }
-
 .mobile-menu-toggle {
-  display: none; /* Escondido em telas maiores */
+  display: none;
   background: none;
   border: none;
   cursor: pointer;
   padding: var(--padding-sm);
-  z-index: 1010; /* Acima do menu mobile */
+  z-index: 100;
 }
 .hamburger-icon {
   display: flex;
@@ -160,14 +159,13 @@ const handleLogout = () => {
 }
 .hamburger-icon .line {
   display: block;
-  height: 2px;
+  height: 3px;
   width: 100%;
-  background-color: var(--text-color-primary);
-  border-radius: 2px;
+  background-color: var(--color-brand-primary);
+  border-radius: 3px;
   transition: all 0.3s ease-in-out;
 }
 
-/* Animação do Hamburger para X */
 .navigation-wrapper.is-open ~ .mobile-menu-toggle .hamburger-icon .line1 {
   transform: rotate(45deg) translate(5px, 5px);
 }
@@ -175,12 +173,12 @@ const handleLogout = () => {
   opacity: 0;
 }
 .navigation-wrapper.is-open ~ .mobile-menu-toggle .hamburger-icon .line3 {
-  transform: rotate(-45deg) translate(5px, -5px);
+  transform: rotate(-45deg) translate(6px, -6px);
 }
 
 .navigation-wrapper {
   display: flex;
-  align-items: center; /* Padrão para desktop */
+  align-items: center; 
   gap: var(--padding-md);
 }
 
@@ -273,46 +271,61 @@ const handleLogout = () => {
   width: 100%;
 }
 
-/* Media Queries para o Menu Hamburger e Layout Desktop */
-/* Breakpoint para mobile (onde o hamburger aparece). Ex: até 768px */
 @media (max-width: 767.98px) {
   .mobile-menu-toggle {
-    display: flex; /* Mostra o hamburger */
+    display: flex;
   }
   .nav-container {
-    /* justify-content: space-between; Garante logo à esquerda e hamburger à direita */
+    max-width: none;
+    margin: 0;
   }
   .navigation-wrapper {
-    display: none; /* Esconde o menu por padrão */
+    display: none; 
     flex-direction: column;
-    align-items: flex-start; /* Alinha itens à esquerda no menu aberto */
+    align-items: flex-start; 
     position: absolute;
-    top: var(--header-height); /* Abaixo do header */
+    top: var(--header-height); 
     left: 0;
     right: 0;
     background-color: var(--bg-light);
+    padding: var(--padding-md) var(--padding-sm);
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    border-top: 1px solid var(--border-color);
+    z-index: 999; 
+  }
+  .navigation-wrapper:not(.is-open) {
+    display: none;
+  }
+  .navigation-wrapper.is-open {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    position: absolute;
+    top: var(--header-height);
+    left: 0;
+    right: 0;
+    background-color: var(--color-bg-card);
     padding: var(--padding-md) var(--mobile-padding);
     box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
     border-top: 1px solid var(--border-color);
-    z-index: 999; /* Abaixo do botão de toggle, mas acima do conteúdo */
-  }
-  .navigation-wrapper.is-open {
-    display: flex; /* Mostra o menu quando aberto */
+    opacity: 0.95;
+    z-index: 1000;
   }
   .main-navigation,
   .user-navigation {
     flex-direction: column;
     width: 100%;
     gap: 0;
-    margin-bottom: 0; /* Reset margin */
+    margin-bottom: 0;
+    align-items: stretch;
   }
   .main-navigation a,
   .user-navigation a,
   .user-navigation .user-greeting,
   .user-navigation .logout-button {
-    width: 100%; /* Itens ocupam largura total */
-    padding: var(--padding-md) var(--padding-sm); /* Ajuste no padding */
-    border-bottom: 1px solid var(--border-color); /* Linhas divisórias */
+    width: 100%; 
+    padding: var(--padding-md) var(--padding-sm); 
+    border-bottom: 1px solid var(--border-color); 
     border-radius: 0;
   }
   .main-navigation a:last-child,
@@ -321,7 +334,6 @@ const handleLogout = () => {
     border-bottom: none;
   }
   .user-actions-area {
-    /* No mobile, o user-actions-area não é mais um agrupador separado visualmente */
     width: 100%;
   }
   .user-greeting {
@@ -334,32 +346,31 @@ const handleLogout = () => {
     max-width: var(--content-max-width);
     margin: 0 auto;
     padding: 0 var(--desktop-padding);
-    /* justify-content: space-between; já está em .nav-container base */
+    justify-content: flex-start;
   }
   .logo-area {
-    margin-right: var(--padding-lg); /* Espaço entre logo e main-nav */
+    margin-right: var(--padding-lg);
   }
   .navigation-wrapper {
-    display: flex !important; /* Garante que esteja visível e flex em desktop */
+    display: flex !important; 
     flex-direction: row;
-    position: static; /* Reset position */
+    position: static; 
     background-color: transparent;
     padding: 0;
     box-shadow: none;
     border-top: none;
-    width: auto; /* Ocupa o espaço restante */
-    flex-grow: 1; /* Para ocupar o espaço disponível */
-    justify-content: space-between; /* Espaça main-nav e user-actions-area */
+    width: auto; 
+    flex-grow: 1; 
+    justify-content: space-between; 
   }
   .main-navigation {
     flex-direction: row;
     width: auto;
     margin-bottom: 0;
-    gap: var(--padding-md); /* Retorna gap horizontal */
+    gap: var(--padding-md); 
   }
   .user-actions-area {
-    /* width: auto; Já é auto */
-    margin-left: var(--padding-lg); /* Espaço antes das ações do usuário */
+    margin-left: var(--padding-lg); 
   }
   .user-navigation {
     flex-direction: row;

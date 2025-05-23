@@ -8,9 +8,9 @@
     <section class="about-section">
       <h2>Objetivo</h2>
       <p class="objective-text">
-        Este projeto foi desenvolvido como um template abrangente para acelerar o desenvolvimento de novas aplicações
+        Este projeto foi desenvolvido para se tornar um template para acelerar o desenvolvimento de novas aplicações
         que requerem funcionalidades de CRUD (Create, Read, Update, Delete) à um sistema completo de gerenciamento
-        para o acesso de usuários. O objetivo principal é fornecer uma fundação sólida, segura e fácil de expandir, economizando
+        ao acesso de usuários. O objetivo principal é fornecer uma fundação sólida, segura e fácil de expandir, economizando
         tempo de desenvolvimento ao evitar a necessidade de reescrever código repetitivo para autenticação,
         autorização e operações básicas de usuário, tanto para usuários comuns quanto para administradores.
       </p>

@@ -37,10 +37,8 @@ const greeting = computed(() => getGreeting())
     <section class="hero-section" :class="{ 'logged-in-hero': authStore.isAuthenticated }">
       <div class="hero-content">
         <template v-if="authStore.isAuthenticated && authStore.currentUser">
-          <div class="user-avatar">
-            <span>{{ userInitial }}</span>
-          </div>
-          <h1 class="hero-title">{{ greeting }}, {{ userDisplayName }}!</h1>
+          <h1 class="hero-title">{{ greeting }}!</h1>
+          <h2 class="hero-subtitle">{{ userDisplayName }}</h2>
           <p class="hero-subtitle">Bem-vindo(a) de volta ao seu painel CRUD Template.</p>
           <p class="hero-text">
             A partir daqui, você pode gerenciar seu perfil, alterar suas configurações de segurança
@@ -118,9 +116,11 @@ const greeting = computed(() => getGreeting())
 
 <style scoped>
 .home-view-layout {
-  padding: 0; 
-  box-shadow: none; /* Sem sombra dupla */
-  background-color: transparent; /* Sem fundo, deixa o fundo da página visível */
+  max-width: 90vh;
+  padding: 0;
+  box-shadow: none; 
+  background-color: transparent;
+  margin: var(--padding-xl) auto;
 }
 
 .hero-section {
@@ -128,7 +128,7 @@ const greeting = computed(() => getGreeting())
     135deg,
     var(--color-brand-primary) 0%,
     #4a2f1f 100%
-  ); /* Ajuste gradiente */
+  ); 
   color: var(--text-color-light);
   padding: 50px var(--page-padding-mobile);
   text-align: center;
@@ -137,8 +137,8 @@ const greeting = computed(() => getGreeting())
   flex-direction: column;
   justify-content: center;
   align-items: center;
-  border-radius: var(--border-radius-lg); /* Arredondar a hero section */
-  margin: var(--padding-md) 0 var(--padding-xl) 0; /* Margem para destacar */
+  border-radius: var(--border-radius-lg);
+  margin: var(--padding-md) 0 var(--padding-xl) 0;
 }
 .hero-section.logged-in-hero {
   background: linear-gradient(
@@ -177,6 +177,7 @@ const greeting = computed(() => getGreeting())
   margin-bottom: 20px;
   opacity: 0.9;
   color: rgba(117, 106, 89, 1.5);
+  text-align: center;
 }
 .hero-text {
   font-size: 1em;
@@ -184,6 +185,7 @@ const greeting = computed(() => getGreeting())
   line-height: 1.6;
   opacity: 0.85;
   color: rgba(117, 106, 89, 1.5);
+  text-align: justify;
 }
 .hero-actions {
   display: flex;
@@ -192,7 +194,6 @@ const greeting = computed(() => getGreeting())
   gap: 12px;
 }
 
-/* Estilo de botão específico para Hero com fundo de marca (para melhor contraste) */
 .btn.btn-primary-inverse {
   background-color: var(--text-color-light);
   color: var(--color-brand-primary);
@@ -229,7 +230,7 @@ const greeting = computed(() => getGreeting())
 
 .quick-info-section {
   padding: var(--padding-lg) 0;
-} /* Reduzido padding, já está no .view-card-container */
+}
 .info-card {
   background-color: var(--color-bg-light);
   padding: var(--padding-lg);
