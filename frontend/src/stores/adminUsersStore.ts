@@ -1,6 +1,6 @@
 import { defineStore } from 'pinia'
 import apiClient from '@/services/apiService'
-import type { UserRead, UserUpdate } from '@/types/user'
+import type { UserRead, UserUpdate, UserCreate } from '@/types/user'
 import { useToast } from 'vue-toastification'
 
 const toast = useToast()
@@ -127,36 +127,44 @@ export const useAdminUsersStore = defineStore('adminUsers', {
     },
 
     async updateUserByAdmin(userId: number, updateData: UserUpdate) {
-      this._setLoading(true);
-      this._setError(null);
-      console.log(`ADMIN_STORE: Tentando atualizar usuário ID ${userId} com dados:`, JSON.stringify(updateData, null, 2));
-
+      this._setLoading(true)
+      this._setError(null)
       try {
-        const response = await apiClient.put<UserRead>(`/users/${userId}`, updateData);
-        console.log('ADMIN_STORE: Resposta do backend ao atualizar:', JSON.stringify(response.data, null, 2));
-        toast.success(`Usuário ID ${userId} atualizado com sucesso.`);
-
-        const userIndex = this.users.findIndex(u => u.id === userId);
+        const response = await apiClient.put<UserRead>(`/users/${userId}`, updateData)
+        toast.success(`Usuário ID ${userId} atualizado com sucesso.`)
+        const userIndex = this.users.findIndex((u) => u.id === userId)
         if (userIndex !== -1) {
-          // Tente esta substituição direta primeiramente:
-          this.users[userIndex] = response.data;
-          // Se a de cima não funcionar como esperado, pode voltar para o spread,
-          // mas a substituição direta é geralmente mais limpa se a API retorna o objeto completo.
-          // this.users[userIndex] = { ...this.users[userIndex], ...response.data };
+          this.users[userIndex] = response.data
         }
-
         if (this.currentUserForEdit && this.currentUserForEdit.id === userId) {
-          this._setCurrentUserForEdit(response.data);
+          this._setCurrentUserForEdit(response.data)
         }
-
-        return response.data;
+        return response.data
       } catch (err: any) {
-        console.error(`Error updating user ${userId} (admin):`, err);
-        const errorMessage = err.response?.data?.detail || `Falha ao atualizar usuário ID ${userId}.`;
-        this._setError(errorMessage);
-        throw err;
+        const errorMessage =
+          err.response?.data?.detail || `Falha ao atualizar usuário ID ${userId}.`
+        this._setError(errorMessage)
+        throw err
       } finally {
-        this._setLoading(false);
+        this._setLoading(false)
+      }
+    },
+
+    async createUserByAdmin(userData: UserCreate) {
+      this._setLoading(true)
+      this._setError(null)
+      try {
+        const response = await apiClient.post<UserRead>(`/users/`, userData)
+        toast.success(`Usuário ${response.data.email} criado com sucesso.`)
+        this.users.unshift(response.data)
+        return response.data
+      } catch (err: any) {
+        console.error('Error creating user (admin):', err)
+        const errorMessage = err.response?.data?.detail || 'Falha ao criar usuário.'
+        this._setError(errorMessage)
+        throw err
+      } finally {
+        this._setLoading(false)
       }
     },
   },
