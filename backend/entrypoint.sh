@@ -1,9 +1,20 @@
 #!/bin/sh
 
-set -e
+# =======================================================================================================
+# --- Script de Entrypoint para o Backend ---                                                       #####
+# =======================================================================================================
 
-echo "Applying Alembic migrations..."
+# Este script é executado quando o container do backend é iniciado.
+# Ele é responsável por aplicar as migrações do banco de dados e iniciar o servidor da aplicação.
+
+# =======================================================================================================
+# --- Aplicar Migrações do Banco de Dados ---                                                       #####
+# =======================================================================================================
+echo "Applying database migrations..."
 alembic upgrade head
 
-echo "Starting Uvicorn server..."
+# =======================================================================================================
+# --- Iniciar Servidor da Aplicação ---                                                             #####
+# =======================================================================================================
+echo "Starting server..."
 exec uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
